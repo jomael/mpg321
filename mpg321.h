@@ -38,7 +38,7 @@
 #include <ao/ao.h>
 #include <mad.h>
 
-#define FAKEVERSION "0.2.11"
+#define FAKEVERSION "0.2.11-3"
 #define VERSIONDATE "2009/06/16"
 
 #ifndef PATH_MAX
@@ -207,6 +207,7 @@ int set_tty_restore();
 int raw_print(char *ctlseq);
 int osc_print(int ps1,int ps2,char *pt);
 char *ctty_path();
-
+void get_term_title(char *title);
+int tty_read(char *output,size_t size);
 
 #endif /* _MPG321_H_ */

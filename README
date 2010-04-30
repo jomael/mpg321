@@ -90,3 +90,29 @@ That's pretty much where mpg321 stands right now. There are still
 unimplemented features, and undoubtedly still bugs. But it works well
 for many people, and it liberates one more dependency people had on
 non-Free software. That's worth it, to me.
+
+TROUBLESHOOTING
+---------------
+
+1) If mpg321 gives:
+	"libao - OSS cannot set rate to 44100" or/and
+	"Can't find a suitable libao driver. (Is device in use?)"
+   a) Try apt-get install libsamplerate0
+   b) Is alsa's OSS emulation loaded? Try: 
+   	"apt-get install alsa-oss"
+   	"modprobe snd_pcm_oss"
+	"modprobe snd_mixer_oss" as root.
+
+2) mpg321 has one resource, allowTitleOps, that enables or disables
+   special operations which mpg321 relies on. If any of these resources are
+   set(or defaults) to false mpg321 may hang. The resources corresponds to mpg321
+   options as:
+
+   allowTitleOps:
+   	--title
+   
+   To set this resource value persistenly you can add the following to either your
+   local ~/.Xdefaults file, or to system-wide resource file like
+   /etc/X11/app-defaults/XTerm:
+
+   *VT100.allowTitleOps: true

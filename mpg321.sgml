@@ -218,6 +218,13 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-l N</option>, <option>--loop N</option>
+        </term>
+        <listitem>
+          <para>Loop song or playlist N times.If N is 0 means infinite times.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><option>--help</option>, <option>--longhelp</option>
         </term>
         <listitem>
