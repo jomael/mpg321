@@ -313,7 +313,6 @@ void open_ao_playdevice(struct mad_header const *header)
             ao_option * ao_options = NULL;
             int driver_id = ao_driver_id("raw");
 
-	    format.rate=8000;
             /* stdout output is expected to be little-endian generally */
             ao_append_option(&ao_options, "byteorder", "little");
         
