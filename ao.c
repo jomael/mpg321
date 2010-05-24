@@ -237,6 +237,9 @@ void open_ao_playdevice(struct mad_header const *header)
         format.bits = 16;
         format.rate = header->samplerate;
         format.channels = (options.opt & MPG321_FORCE_STEREO) ? 2 : MAD_NCHANNELS(header);
+	
+	/* Add this element as an option to mpg321 */
+	format.matrix = "L,R";
 
         /* mad gives us little-endian data; we swap it on big-endian targets, to
           big-endian format, because that's what most drivers expect. */
@@ -310,6 +313,7 @@ void open_ao_playdevice(struct mad_header const *header)
             ao_option * ao_options = NULL;
             int driver_id = ao_driver_id("raw");
 
+	    format.rate=8000;
             /* stdout output is expected to be little-endian generally */
             ao_append_option(&ao_options, "byteorder", "little");
         
