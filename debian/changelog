@@ -27,7 +27,7 @@ mpg321 (0.2.11-3) unstable; urgency=high
     mpg321 will utilise the power of this new libao option.
     (Closes: Bug#580062, Bug#580193) 
 
- -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 24 May 2010 12:45:08 +0200
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Mon, 24 May 2010 12:45:08 +0200
 
 mpg321 (0.2.11-2) unstable; urgency=high
   
