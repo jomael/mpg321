@@ -1,0 +1,121 @@
+From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+Subject: Added xterm option so gmusicbrowser dont crash.
+
+Index: mpg321-0.2.11/mpg321.c
+===================================================================
+--- mpg321-0.2.11.orig/mpg321.c	2010-01-24 08:42:50.000000000 -0500
++++ mpg321-0.2.11/mpg321.c	2010-01-24 08:50:40.000000000 -0500
+@@ -63,7 +63,7 @@
+ struct termios *tty_ts_orig_pt = NULL;
+ static char temp[1024];
+ char *ctty_path();
+-
++int set_xterm = 0;
+ 
+ 
+ int shuffle_play;
+@@ -119,6 +119,7 @@
+         "   --loop N or -l N         Play files N times. 0 means until\n"
+         "                            interrupted\n"
+         "   -R                       Use remote control interface\n"
++        "   -x                       Set xterm title setting\n"
+         "   -p hostname:port         Use proxy server\n"
+         "   -u username:password     Use proxy server basic authentication\n"
+         "   -U username:password     Use proxy server basic authentication by using environment variables\n"
+@@ -303,7 +304,10 @@
+     {
+         printf ("@R MPG123\n");
+     }
+-    tty_control();    
++    if(set_xterm)
++    {
++	    tty_control();
++    }
+     /* Play the mpeg files or zip it! */
+     while((currentfile = get_next_file(pl, &playbuf)))
+     {
+@@ -503,7 +507,10 @@
+             fprintf(stderr,"Playing MPEG stream from %s ...\n", basen);
+             
+ 			/*Printing xterm title*/
+-			osc_print(0,0,basen);
++	    if(set_xterm)
++	    {
++		    osc_print(0,0,basen);
++	    }
+ 	    
+             free(dirc);
+             free(basec);
+@@ -511,7 +518,10 @@
+ 
+         signal(SIGINT, handle_signals);
+         /*Give control back so that we can implement SIG's*/
+-        set_tty_restore();
++	if(set_xterm)
++	{
++		set_tty_restore();
++	}
+         /* Every time the user gets us to rewind, we exit decoding,
+            reinitialize it, and re-start it */
+       
+@@ -570,12 +580,13 @@
+ 
+     ao_shutdown();
+     /*Restoring TTY*/
+-    set_tty_restore();
+-    osc_print(0,0,"Terminal");
+-    if (ctty)
+-    fclose(ctty);
+-
+-
++    if(set_xterm)
++    {
++	    set_tty_restore();
++	    osc_print(0,0,"Terminal");
++	    if (ctty)
++		    fclose(ctty);
++    }
+     return(0);
+ }
+ 
+Index: mpg321-0.2.11/options.c
+===================================================================
+--- mpg321-0.2.11.orig/options.c	2010-01-24 08:42:38.000000000 -0500
++++ mpg321-0.2.11/options.c	2010-01-24 08:58:27.000000000 -0500
+@@ -47,6 +47,9 @@
+ /*Basic Authentication Arguments*/
+ char *basic_auth = NULL;
+ 
++/*xterm title setting flag*/
++extern int set_xterm;
++
+ void parse_options(int argc, char *argv[], playlist *pl)
+ {
+     struct option long_options[] =
+@@ -103,6 +106,7 @@
+         { "shuffle", 0, 0, 'z' },
+         { "random", 0, 0, 'Z' },
+         { "remote", 0, 0, 'R' },
++        { "set_xterm", 0, 0, 'x' },
+         { "stereo", 0, 0, 'T' },
+             
+         /* takes parameters */
+@@ -123,7 +127,7 @@
+ 
+     while ((c = getopt_long(argc, argv, 
+                                 "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
+-                                "A:D:vqtsVHzZRo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
++                                "A:D:vqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
+                         long_options, &option_index)) != -1)
+     {            
+         switch(c)
+@@ -132,6 +136,9 @@
+             case '2': case '4': case 'c': case 'y': case '0': case '1': case 'm': case 'C':
+             case 'd': case 'h': case 'f': case 'b': 
+                 break;
++	    case 'x':
++		set_xterm=1;
++		break;
+ 	    case 'p':
+ 		proxy_server = strdup(optarg);
+ 		proxy_enable = 1;

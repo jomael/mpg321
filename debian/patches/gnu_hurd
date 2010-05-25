@@ -1,0 +1,18 @@
+From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+Subject: Added PATH_MAX POSIX constant for Gnu/HURD compilation error.
+
+Index: mpg321-0.2.11/mpg321.h
+===================================================================
+--- mpg321-0.2.11.orig/mpg321.h	2010-01-22 08:28:40.000000000 -0500
++++ mpg321-0.2.11/mpg321.h	2010-01-22 08:29:48.000000000 -0500
+@@ -41,6 +41,10 @@
+ #define FAKEVERSION "0.2.11"
+ #define VERSIONDATE "2009/06/16"
+ 
++#ifndef PATH_MAX
++#define PATH_MAX	4096
++#endif
++
+ /* playlist structure */
+ typedef struct pl
+ {

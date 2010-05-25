@@ -39,7 +39,7 @@
 #include <mad.h>
 
 #define FAKEVERSION "0.2.11-3"
-#define VERSIONDATE "2009/06/16"
+#define VERSIONDATE "2010/05/24"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096
