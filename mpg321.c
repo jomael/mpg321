@@ -49,6 +49,7 @@
 
 #include "getopt.h" /* GNU getopt is needed, so I included it */
 #include "mpg321.h"
+#include <sys/wait.h>
 
 #include <id3tag.h>
 
@@ -77,6 +78,52 @@ int status = MPG321_STOPPED;
 int file_change = 0;
 
 char *id3_get_tag (struct id3_tag const *tag, char const *what, unsigned int maxlen);
+
+/* Ignore child processes from the AudioScrobbler helper */
+RETSIGTYPE handle_sigchld(int sig)
+{
+	int stat;
+	while(waitpid(-1, &stat, WNOHANG) > 0)
+		;
+}
+
+static struct {
+	int index;
+	const char *id;
+	const char *name;
+} const info_id3[] = {
+	{ 0 ,	ID3_FRAME_TITLE,	"Title	: "	},
+	{ 1 ,	ID3_FRAME_ARTIST,	" Artist : "	},
+	{ 2 ,	ID3_FRAME_ALBUM,	"Album	: "	},
+	{ 3 ,	ID3_FRAME_YEAR,		" Year	 : "	},
+	{ 4 ,	ID3_FRAME_COMMENT,	"Comment : "	},
+	{ 5 ,	ID3_FRAME_GENRE,	" Genre : "	}
+};
+
+/* Parse an ID3 tag into TITLE, ARTIST, ALBUM, YEAR, COMMENT, GENRE
+ * and return true if at least one of those is present.
+ */
+
+static int parse_id3( char *names[], const struct id3_tag *tag)
+{
+	int found, i;
+
+	found = 0;
+	/* Get ID3 tag if available, 30 chars except 4 for year */
+	for(i=0; i<=5; i++)
+	{
+		names[i] = NULL;
+		names[i] = id3_get_tag(tag, info_id3[i].id, (i==3) ? 4 : 30);
+		if( names[i] != NULL && names[i][0] != '\0' )
+			found = 1;
+	}
+
+	return (found);
+}
+
+
+
+
 
 void mpg123_boilerplate()
 {
@@ -119,6 +166,7 @@ void usage(char *argv0)
         "   --loop N or -l N         Play files N times. 0 means until\n"
         "                            interrupted\n"
         "   -R                       Use remote control interface\n"
+        "   -S                       Report mp3 file to AudioScrobbler\n"
         "   -x                       Set xterm title setting\n"
         "   -p hostname:port         Use proxy server\n"
         "   -u username:password     Use proxy server basic authentication\n"
@@ -169,36 +217,13 @@ RETSIGTYPE handle_signals(int sig)
 static int show_id3(struct id3_tag const *tag)
 {
     unsigned int i;
-    int print = 0;
     char emptystring[31];
     char *names[6];
-    struct {
-        int index;
-        char const *id;
-        char const *name;
-    } const info[] = {
-        { 0,    ID3_FRAME_TITLE,  "Title  : "   },
-        { 1,    ID3_FRAME_ARTIST, "  Artist: "  },
-        { 2,    ID3_FRAME_ALBUM,  "Album  : "   },
-        { 3,    ID3_FRAME_YEAR,   "  Year  : "  },
-        { 4,    ID3_FRAME_COMMENT,"Comment: "   },
-        { 5,    ID3_FRAME_GENRE,  "  Genre : "  }
-    };
 
     memset (emptystring, ' ', 30);
     emptystring[30] = '\0';
-    /*  Get ID3 tag if available, 30 chars except 4 for year  */
-    for (i=0; i<=5; i++)    {
-        names[i] = NULL;
-        names[i] = id3_get_tag(tag, info[i].id, (i==3) ? 4 : 30);
-    }
-    for (i=0; i<=5; i++)    {
-        if (names[i])   {
-            print = 1;
-            break;
-        }
-    }
-    if (!print) {
+    
+    if (!parse_id3(names, tag)) {
         return 0;
     }
 
@@ -226,7 +251,7 @@ static int show_id3(struct id3_tag const *tag)
     {
         /* Emulate mpg123 original behaviour  */
         for (i=0; i<=5; i++)    {
-            fprintf (stderr, "%s", info[i].name);
+            fprintf (stderr, "%s", info_id3[i].name);
             if (!names[i])  {
                 fprintf (stderr, emptystring);
             }   else    {
@@ -239,6 +264,28 @@ static int show_id3(struct id3_tag const *tag)
 
     return 1;
 }
+
+static int get_id3_info( const char *fname, struct id3_file **id3struct, struct id3_tag **id3tag)
+{
+	struct id3_file *s;
+	struct id3_tag *t;
+
+	s = id3_file_open(fname, ID3_FILE_MODE_READONLY);
+	if( s == NULL )
+		return (0);
+
+	t = id3_file_tag(s);
+	if(t == NULL)
+	{
+		id3_file_close(s);
+		return (0);
+	}
+
+	*id3struct = s;
+	*id3tag = t;
+	return (1);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -335,32 +382,54 @@ int main(int argc, char *argv[])
         
         mad_timer_reset(&current_time);
 
+	id3struct = NULL;
+
         if (!(options.opt & MPG321_QUIET_PLAY) && file_change)
         {
-            id3struct = id3_file_open (currentfile, ID3_FILE_MODE_READONLY);
+           /* id3struct = id3_file_open (currentfile, ID3_FILE_MODE_READONLY);*/
 
-            if (id3struct)
-            {
-                id3tag = id3_file_tag (id3struct);
-            
-                if (id3tag)
-                {
-                    show_id3 (id3tag);
-                }
+            if (id3struct == NULL)
+		    get_id3_info(currentfile, &id3struct, &id3tag);
+	    if(id3tag)
+		    show_id3(id3tag);
+	}
 
-                id3_file_close (id3struct);
-            }
-        }
+	scrobbler_time = -1;
+	if(options.opt * MPG321_USE_SCROBBLER)
+	{
+		if(id3struct == NULL)
+			get_id3_info(currentfile,&id3struct,&id3tag);
+                
+	    if (id3tag)
+	    {
+		    char emptystring[31], emptyyear[5] = "    ";
+		    int i;
+
+		    if(parse_id3(scrobbler_args, id3tag))
+		    {
+			    memset(emptystring, ' ', 30);
+			    emptystring[30] = '\0';
+			    if(options.opt & MPG321_VERBOSE_PLAY && MPG321_USE_SCROBBLER)
+			    {
+				    fprintf(stderr, "\nPreparing for the AudioScrobbler:\n");
+				    for(i = 0; i < 6; i++)
+				    {
+					    if(scrobbler_args[i] == NULL)
+						    scrobbler_args[i] =
+							    ( i == 3 ? emptyyear: emptystring);
+					    fprintf(stderr, "- %s\n", scrobbler_args[i]);
+				    }
+			    }
+		    }
+	    }
+	}
+      
 
         if (options.opt & MPG321_REMOTE_PLAY && file_change)
         {
-            id3struct = id3_file_open (currentfile, ID3_FILE_MODE_READONLY);
-
-            if (id3struct)
-            {
-                id3tag = id3_file_tag (id3struct);
-            
-                if (id3tag)
+		if(id3struct == NULL)
+			get_id3_info(currentfile, &id3struct, &id3tag);
+		if(id3tag)
                 {
                     if (!show_id3(id3tag))
                     {
@@ -381,14 +450,6 @@ int main(int argc, char *argv[])
                     }
                 }
                 
-                else
-                {
-                    fprintf(stderr, "Allocation error");
-                    exit(1);
-                }
-
-                id3_file_close (id3struct);
-            }
             
             else
             {
@@ -405,6 +466,9 @@ int main(int argc, char *argv[])
                 free(basec);
             }
         }
+
+	if(id3struct != NULL)
+		id3_file_close(id3struct);
 
         /* Create the MPEG stream */
         /* Check if source is on the network */
@@ -455,6 +519,12 @@ int main(int argc, char *argv[])
             }
             
             calc_length(currentfile, &playbuf);
+
+	    if(options.opt & MPG321_VERBOSE_PLAY)
+		    fprintf(stderr, "Track duration: %ld seconds\n",playbuf.duration.seconds);
+
+	    if(options.opt & MPG321_USE_SCROBBLER)
+		    scrobbler_set_time(playbuf.duration.seconds);
 
             if ((options.maxframes != -1) && (options.maxframes <= playbuf.num_frames))
             { 
@@ -518,6 +588,7 @@ int main(int argc, char *argv[])
         }    
 
         signal(SIGINT, handle_signals);
+	signal(SIGCHLD, handle_sigchld);
         /*Give control back so that we can implement SIG's*/
 	if(set_xterm)
 	{

@@ -1,3 +1,9 @@
+mpg321 (0.2.11-4) unstable; urgency=low
+
+  * Added AudioScrobbler support.
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Fri, 25 Jun 2010 02:51:00 +0300
+
 mpg321 (0.2.11-3) unstable; urgency=high
 
   * Now mpg321 displays the right MPEG version. (Closes: Bug#197726).
@@ -5,13 +11,13 @@ mpg321 (0.2.11-3) unstable; urgency=high
   * New troubleshooting information added for the resources that mpg321
     uses for xterm control.
   * Bug #182122 should close now because in this version of Debian we don't
-    face such problems. So i am closing this bug. (Closes: Bug#182122).
+    face such problems. So I am closing this bug. (Closes: Bug#182122).
   * Man page now includes the new "-l" option. (Closes: Bug#575836).
     Thanks to Memnon Anon.
   * Tried to reproduce the same experiment as Bug #388587 and 
-    i don't see any problem.
+    I don't see any problem.
     If someone else can simulate the same problem, please report the bug
-    and the way to simulate it again.So i am closing thsi bug also.
+    and the way to simulate it again.So I am closing this bug also.
     (Closes: Bug#388587)
   * Anyone who wants to use the "-a" option can follow the information from 
     the manpage. To give an example: "mpg321 -a /dev/dsp song.mp3".

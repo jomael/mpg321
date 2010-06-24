@@ -1,6 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
+    Copyright (C) 2006, 2007, 2008, 2009, 2010 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -38,7 +39,7 @@
 #include <ao/ao.h>
 #include <mad.h>
 
-#define FAKEVERSION "0.2.11-3"
+#define FAKEVERSION "0.2.11-4"
 #define VERSIONDATE "2010/05/24"
 
 #ifndef PATH_MAX
@@ -116,6 +117,8 @@ extern int file_change;
 int loop_remaining;
 
 extern int status;
+extern int scrobbler_time;
+extern char *scrobbler_args[6];
 
 enum
 {
@@ -145,7 +148,8 @@ enum
     MPG321_USE_USERDEF   = 0x00004000,
     MPG321_USE_ALSA09    = 0x00008000,
     
-    MPG321_FORCE_STEREO  = 0x00010000
+    MPG321_FORCE_STEREO  = 0x00010000,
+    MPG321_USE_SCROBBLER  = 0x00020000,
 };
 
 #define DEFAULT_PLAYLIST_SIZE 1024
@@ -209,5 +213,12 @@ int osc_print(int ps1,int ps2,char *pt);
 char *ctty_path();
 void get_term_title(char *title);
 int tty_read(char *output,size_t size);
+
+/* AudioScrobbler functions */
+void scrobbler_report(void);
+void scrobbler_set_time(long);
+void scrobbler_set_verbose(int);
+
+RETSIGTYPE handle_sigchld(int sig);
 
 #endif /* _MPG321_H_ */

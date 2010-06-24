@@ -230,6 +230,12 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 
     mad_timer_add(&current_time, header->duration);
 
+    if(options.opt & MPG321_USE_SCROBBLER && scrobbler_time > 0 && scrobbler_time < current_time.seconds)
+    {
+	    scrobbler_time = -1;
+	    scrobbler_report();
+    }
+
     if(options.opt & (MPG321_VERBOSE_PLAY | MPG321_REMOTE_PLAY))
     {
         mad_timer_string(current_time, long_currenttime_str, "%.2u:%.2u.%.2u", MAD_UNITS_MINUTES,
@@ -307,7 +313,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
     {
         if (!options.skip_printing_frames 
             || (options.skip_printing_frames && !(current_frame % options.skip_printing_frames)))
-            fprintf(stderr, "Frame# %5lu [%5lu], Time: %s [%s], \r", current_frame, 
+			fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s], \r", current_frame, 
                     playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
     }
     

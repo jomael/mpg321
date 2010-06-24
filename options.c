@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     options.c: Copyright (C) 2001, 2002 Joe Drew
-    
+    	       Copyright (C) 2006, 2007, 2008, 2009, 2010 Nanakos Chrysostomos
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
     Copyright (C) 1999 Loki Entertainment Software
@@ -108,6 +108,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "remote", 0, 0, 'R' },
         { "set_xterm", 0, 0, 'x' },
         { "stereo", 0, 0, 'T' },
+        { "scrobbler", 0, 0, 'S' },
             
         /* takes parameters */
         { "frames", 1, 0, 'n' },
@@ -127,7 +128,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
     while ((c = getopt_long(argc, argv, 
                                 "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
-                                "A:D:vqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
+                                "A:D:SvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
                         long_options, &option_index)) != -1)
     {            
         switch(c)
@@ -172,6 +173,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
             case 'v':
                 options.opt |= MPG321_VERBOSE_PLAY;
+		scrobbler_set_verbose(1);
                 setvbuf(stdout, NULL, _IONBF, 0);
                 break;
             
@@ -223,6 +225,10 @@ void parse_options(int argc, char *argv[], playlist *pl)
             case 's':
                 options.opt |= MPG321_USE_STDOUT;
                 break;
+
+	    case 'S':
+		options.opt |= MPG321_USE_SCROBBLER;
+		break;
                 
             case 'o':
                 if (strcmp(optarg, "alsa") == 0)
