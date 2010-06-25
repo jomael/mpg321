@@ -186,6 +186,14 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-S</option>
+        </term>
+        <listitem>
+          <para>Reporting song to AudioScrobbler (last.fm).
+          </para>
+        </listitem>
+      </varlistentry> 
+      <varlistentry>
         <term><option>-R</option>
         </term>
         <listitem>

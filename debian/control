@@ -9,7 +9,7 @@ DM-Upload-Allowed: yes
 
 Package: mpg321
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libaudio-scrobbler-perl
 Provides: mpg123, mp3-decoder
 Description: Simple and lighweight command line MP3 player
  mpg321 is a clone of the popular mpg123 command-line mp3 player. It should

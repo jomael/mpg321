@@ -182,6 +182,8 @@ enum mad_flow read_header(void *data, struct mad_header const * header);
 enum mad_flow output(void *data, struct mad_header const *header, struct mad_pcm *pcm);
 int calc_length(char *file, buffer*buf );
 
+static enum mad_flow handle_error(void *data, struct mad_stream *stream, struct mad_frame *frame);
+
 enum mad_flow move(buffer *buf, signed long frames);
 void seek(buffer *buf, signed long frame);
 void pause_play(buffer *buf, playlist *pl);

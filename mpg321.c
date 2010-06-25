@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
 	}
 
 	scrobbler_time = -1;
-	if(options.opt * MPG321_USE_SCROBBLER)
+	if(options.opt & MPG321_USE_SCROBBLER)
 	{
 		if(id3struct == NULL)
 			get_id3_info(currentfile,&id3struct,&id3tag);
@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
 		    {
 			    memset(emptystring, ' ', 30);
 			    emptystring[30] = '\0';
-			    if(options.opt & MPG321_VERBOSE_PLAY && MPG321_USE_SCROBBLER)
+	    		    if((options.opt & MPG321_VERBOSE_PLAY) && (options.opt & MPG321_USE_SCROBBLER))
 			    {
 				    fprintf(stderr, "\nPreparing for the AudioScrobbler:\n");
 				    for(i = 0; i < 6; i++)
@@ -480,7 +480,7 @@ int main(int argc, char *argv[])
             playbuf.length = BUF_SIZE;
             
             mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
-                            output, /*error*/0, /* message */ 0);
+                            output, handle_error, /* message */ 0);
         }
 
         /* Check if we are to use stdin for input */
@@ -491,7 +491,7 @@ int main(int argc, char *argv[])
             playbuf.length = BUF_SIZE;
 
             mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
-                            output, /*error*/0, /* message */ 0);
+                            output, handle_error, /* message */ 0);
         }
             
         /* currentfile is a local file (presumably.) mmap() it */
@@ -502,8 +502,9 @@ int main(int argc, char *argv[])
             if((fd = open(currentfile, O_RDONLY)) == -1)
             {
                 mpg321_error(currentfile);
-
+		exit(1);
                 /* mpg123 stops immediately if it can't open a file */
+		/* If sth goes wrong break!!!*/
                 break;
             }
             
@@ -520,7 +521,7 @@ int main(int argc, char *argv[])
             
             calc_length(currentfile, &playbuf);
 
-	    if(options.opt & MPG321_VERBOSE_PLAY)
+	    if((options.opt & MPG321_VERBOSE_PLAY) && (options.opt & MPG321_USE_SCROBBLER))
 		    fprintf(stderr, "Track duration: %ld seconds\n",playbuf.duration.seconds);
 
 	    if(options.opt & MPG321_USE_SCROBBLER)
@@ -544,7 +545,7 @@ int main(int argc, char *argv[])
             playbuf.frames[0] = playbuf.buf;
             
             mad_decoder_init(&decoder, &playbuf, read_from_mmap, read_header, /*filter*/0,
-                            output, /*error*/0, /* message */ 0);
+                            output, handle_error, /* message */ 0);
         }
 
         if(!(options.opt & MPG321_QUIET_PLAY))/*zip it!!!*/
@@ -922,3 +923,34 @@ void get_term_title(char *title)
 
 	snprintf((char *)title,sizeof(buffer),"%s",buffer+3);
 }
+
+static enum mad_flow handle_error(void *data, struct mad_stream *stream, struct mad_frame *frame)
+{
+	signed long tagsize;
+
+	switch(stream->error)
+	{
+		case MAD_ERROR_BADDATAPTR:
+			return MAD_FLOW_CONTINUE;
+		case MAD_ERROR_LOSTSYNC:
+			tagsize = id3_tag_query(stream->this_frame,stream->bufend - stream->this_frame);
+			if(tagsize > 0)
+			{
+				mad_stream_skip(stream, tagsize);
+				return MAD_FLOW_CONTINUE;
+			}
+
+		default:
+			break;
+	}
+
+	if(stream->error == MAD_ERROR_BADCRC)
+	{
+		mad_frame_mute(frame);
+		return MAD_FLOW_IGNORE;
+	}
+
+	return MAD_FLOW_CONTINUE;
+}
+
+
