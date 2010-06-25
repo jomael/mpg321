@@ -109,6 +109,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "set_xterm", 0, 0, 'x' },
         { "stereo", 0, 0, 'T' },
         { "scrobbler", 0, 0, 'S' },
+        { "recursive", 0, 0, 'B' },
             
         /* takes parameters */
         { "frames", 1, 0, 'n' },
@@ -128,7 +129,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
     while ((c = getopt_long(argc, argv, 
                                 "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
-                                "A:D:SvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
+                                "A:D:SBvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
                         long_options, &option_index)) != -1)
     {            
         switch(c)
@@ -228,6 +229,10 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
 	    case 'S':
 		options.opt |= MPG321_USE_SCROBBLER;
+		break;
+
+	    case 'B':
+		options.opt |= MPG321_RECURSIVE_DIR;
 		break;
                 
             case 'o':

@@ -1,6 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
+    Copyright (C) 2010 Nanakos Chrysostomos, Giuseppe Scrivano <gscrivano@gnu.org>
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -40,7 +41,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <libgen.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include "mpg321.h"
 
 playlist * new_playlist()
@@ -155,16 +158,55 @@ char * get_next_file(playlist *pl, buffer *buf)
     }
 }
 
-void add_cmdline_files(playlist *pl, char *argv[])
+void add_path(playlist *pl, char *path)
 {
-    int i;
-    for (i = optind; argv[i]; ++i )
+    struct stat sb;
+
+    if(lstat(path,&sb))
+	    return;
+    if(S_ISREG(sb.st_mode))
     {
         if (pl->numfiles == pl->files_size)
             resize_playlist(pl);
 
-        pl->files[(pl->numfiles)++] = strdup(argv[i]);
+        pl->files[(pl->numfiles)++] = path;
+    } else {
+	    DIR *dir = opendir(path);
+	    struct dirent *entry;
+	    if(dir == NULL)
+		    return;
+
+	    while((entry = readdir(dir)))
+	    {
+		    if(entry->d_name[0] != '.')
+		    {
+			    char *new_path = malloc(strlen(path)+strlen(entry->d_name)+2);
+			    sprintf(new_path, "%s/%s", path, entry->d_name);
+			    add_path(pl, new_path);
+		    }
+	    }
+	    closedir(dir);
+	    free(path);
     }
+}
+
+void add_cmdline_files_recursive_dir(playlist *pl, char *argv[])
+{
+	int i;
+	for(i= optind; argv[i]; ++i)
+		add_path(pl, strdup(argv[i]));
+}
+
+void add_cmdline_files(playlist *pl, char *argv[])
+{
+
+	int i;
+	for (i = optind; argv[i]; ++i )
+	{
+		if (pl->numfiles == pl->files_size)
+			resize_playlist(pl);
+		pl->files[(pl->numfiles)++] = strdup(argv[i]);
+	}
 }
 
 void play_remote_file(playlist *pl, char *file)

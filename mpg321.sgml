@@ -186,6 +186,14 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-B</option>
+        </term>
+        <listitem>
+          <para>Read recursively the given directories. Allows you to define only the directory or directories and then mpg321 recursively plays all the songs.
+          </para>
+        </listitem>
+      </varlistentry> 
+      <varlistentry>
         <term><option>-S</option>
         </term>
         <listitem>

@@ -1,6 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
+    Copyright (C) 2006-2010 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -327,8 +328,11 @@ int main(int argc, char *argv[])
 
     if (playlist_file)
         load_playlist(pl, playlist_file);
-    
-    add_cmdline_files(pl, argv);
+
+    if(options.opt & MPG321_RECURSIVE_DIR)
+	    add_cmdline_files_recursive_dir(pl, argv);
+    else
+	    add_cmdline_files(pl, argv);
 
     if (shuffle_play)
         shuffle_files(pl);

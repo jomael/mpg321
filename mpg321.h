@@ -150,6 +150,7 @@ enum
     
     MPG321_FORCE_STEREO  = 0x00010000,
     MPG321_USE_SCROBBLER  = 0x00020000,
+    MPG321_RECURSIVE_DIR  = 0x00040000,
 };
 
 #define DEFAULT_PLAYLIST_SIZE 1024
@@ -160,6 +161,7 @@ playlist * new_playlist();
 void resize_playlist(playlist *pl);
 char * get_next_file(playlist *pl, buffer *buf);
 void add_cmdline_files(playlist *pl, char *argv[]);
+void add_cmdline_files_recursive_dir(playlist *pl, char *argv[]);
 void add_file(playlist *pl, char *file);
 void load_playlist(playlist *pl, char *filename);
 void set_random_play(playlist *pl);
