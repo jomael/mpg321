@@ -16,15 +16,15 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 # Process this file with autoconf to produce a configure script.
-AC_PREREQ([2.65])
-AC_INIT([mpg321], [0.2.11],[nanakos@wired-net.gr])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_PREREQ(2.59)
+AC_INIT
 AC_CONFIG_SRCDIR([mad.c])
 AC_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE(mpg321, 0.2.11)
 
 # Checks for programs.
-AC_PROG_CC
 AC_PROG_AWK
+AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
@@ -45,7 +45,7 @@ AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h netdb.h netinet/in.h stdl
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h sys/ioctl.h sys/time.h unistd.h])
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h)
 AC_HEADER_TIME
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -66,7 +66,7 @@ AC_TYPE_SIGNAL
 # AC_CHECK_TYPE doesn't work, probably because the type in
 # question is not defined in sys/types.h.
 
-#AC_TYPE_SOCKLEN_T
+AC_TYPE_SOCKLEN_T
 
 
 dnl Check for LFS

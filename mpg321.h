@@ -131,26 +131,27 @@ enum
 
 enum
 {
-    MPG321_VERBOSE_PLAY  = 0x00000001,
-    MPG321_QUIET_PLAY    = 0x00000002,
-    MPG321_REMOTE_PLAY   = 0x00000004,
+    MPG321_VERBOSE_PLAY   = 0x00000001,
+    MPG321_QUIET_PLAY     = 0x00000002,
+    MPG321_REMOTE_PLAY    = 0x00000004,
 
-    MPG321_USE_OSS       = 0x00000010,
-    MPG321_USE_SUN       = 0x00000020,
-    MPG321_USE_ALSA      = 0x00000040,
-    MPG321_USE_ESD       = 0x00000080,
-    MPG321_USE_ARTS      = 0x00000100,
-    MPG321_USE_NULL      = 0x00000200,
-    MPG321_USE_STDOUT    = 0x00000400,
-    MPG321_USE_WAV       = 0x00000800,
-    MPG321_USE_AU        = 0x00001000,
-    MPG321_USE_CDR       = 0x00002000,
-    MPG321_USE_USERDEF   = 0x00004000,
-    MPG321_USE_ALSA09    = 0x00008000,
+    MPG321_USE_OSS        = 0x00000010,
+    MPG321_USE_SUN        = 0x00000020,
+    MPG321_USE_ALSA       = 0x00000040,
+    MPG321_USE_ESD        = 0x00000080,
+    MPG321_USE_ARTS       = 0x00000100,
+    MPG321_USE_NULL       = 0x00000200,
+    MPG321_USE_STDOUT     = 0x00000400,
+    MPG321_USE_WAV        = 0x00000800,
+    MPG321_USE_AU         = 0x00001000,
+    MPG321_USE_CDR        = 0x00002000,
+    MPG321_USE_USERDEF    = 0x00004000,
+    MPG321_USE_ALSA09     = 0x00008000,
     
-    MPG321_FORCE_STEREO  = 0x00010000,
+    MPG321_FORCE_STEREO   = 0x00010000,
     MPG321_USE_SCROBBLER  = 0x00020000,
     MPG321_RECURSIVE_DIR  = 0x00040000,
+    MPG321_PRINT_FFT	  = 0x00080000,
 };
 
 #define DEFAULT_PLAYLIST_SIZE 1024
@@ -222,7 +223,23 @@ int tty_read(char *output,size_t size);
 void scrobbler_report(void);
 void scrobbler_set_time(long);
 void scrobbler_set_verbose(int);
-
 RETSIGTYPE handle_sigchld(int sig);
+
+/* FFT data structures */
+#define FFT_BUFFER_SIZE_LOG 9
+#define FFT_BUFFER_SIZE (1 << FFT_BUFFER_SIZE_LOG) /* 512 */
+/*Temporary data stores to perform FFT in */
+double real[FFT_BUFFER_SIZE];
+double imag[FFT_BUFFER_SIZE];
+
+typedef struct {
+	double real[FFT_BUFFER_SIZE];
+	double imag[FFT_BUFFER_SIZE];
+} fft_state;
+
+typedef short int sound_sample;
+//void fft_perform(const sound_sample *input, double *output, fft_state *state);
+
+fft_state *fft_init(void);
 
 #endif /* _MPG321_H_ */

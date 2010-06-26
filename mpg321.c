@@ -167,6 +167,7 @@ void usage(char *argv0)
         "   --loop N or -l N         Play files N times. 0 means until\n"
         "                            interrupted\n"
         "   -R                       Use remote control interface\n"
+        "   -F                       Turn on FFT analysis on PCM data. Remote mode only\n"
         "   -B                       Read recursively the given directories\n"
         "   -S                       Report mp3 file to AudioScrobbler\n"
         "   -x                       Set xterm title setting\n"
@@ -319,6 +320,14 @@ int main(int argc, char *argv[])
     
     /* Get the command line options */
     parse_options(argc, argv, pl);
+
+    if(options.opt & MPG321_PRINT_FFT)
+	    if(!(options.opt & MPG321_REMOTE_PLAY))
+	    {
+		    printf("FFT analysis can only be used in Remote mode play.\n");
+		    exit(1);
+	    }
+
 
     /* If there were no files and no playlist specified just print the usage */
     if (!playlist_file && optind == argc)

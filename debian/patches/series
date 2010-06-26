@@ -8,3 +8,7 @@ README_fix
 xterm_title
 configure_add
 git_ignore
+scrobbler_recursive.patch
+scrobbler_recursive_man.patch
+configure.patch
+scrobbler_makefile.patch

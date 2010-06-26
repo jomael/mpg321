@@ -1,6 +1,7 @@
 mpg321 (0.2.11-4) unstable; urgency=high
 
   * Added AudioScrobbler support.
+  * Added FFT analysis support on PCM data for Remote mode play.
   * mpg321 doesn't resample for the moment.
     (Closes: Bug#118283),(Closes: Bug#200346).
   * We don't need to compare mpg321 to mpg123 anymore. (Closes: Bug#533674). 

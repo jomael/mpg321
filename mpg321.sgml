@@ -194,6 +194,14 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-F</option>
+        </term>
+        <listitem>
+          <para>Turn on FFT analysis on PCM data. Remote mode only
+          </para>
+        </listitem>
+      </varlistentry> 
+      <varlistentry>
         <term><option>-S</option>
         </term>
         <listitem>
