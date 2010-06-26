@@ -167,6 +167,7 @@ void usage(char *argv0)
         "   --loop N or -l N         Play files N times. 0 means until\n"
         "                            interrupted\n"
         "   -R                       Use remote control interface\n"
+        "   -B                       Read recursively the given directories\n"
         "   -S                       Report mp3 file to AudioScrobbler\n"
         "   -x                       Set xterm title setting\n"
         "   -p hostname:port         Use proxy server\n"
