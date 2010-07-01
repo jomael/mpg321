@@ -40,7 +40,7 @@
   <refnamediv>
     <refname>&dhpackage;</refname>
 
-    <refpurpose>Free clone of mpg123, a command-line mp3 player</refpurpose>
+    <refpurpose>Simple and lighweight command line MP3 player</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <cmdsynopsis>
@@ -51,21 +51,14 @@
     <title>DESCRIPTION</title>
 
     <para><command>&dhpackage;</command> is a free command-line mp3 player,
-    which uses the mad audio decoding library. &dhpackage; is written to be a 
-    drop-in replacement for the non-free <command>mpg123</command> player.
+    which uses the mad audio decoding library. &dhpackage; was written to be a 
+    drop-in replacement for the (by-then) non-free <command>mpg123</command> player.
     Some functions remain unimplemented, but &dhpackage; should function as a
     basic drop-in replacement for <command>mpg123</command> front-ends such as 
     <command>gqmpeg</command>, and those programs which use mpg123 to decode
     mp3 files (like <command>gtoaster</command>, and other CD-recording 
     software).</para>
     
-    <para><command>&dhpackage;</command> differs from <command>mpg123</command>
-    in several ways. First and foremost, it is fully Free, under the GNU General
-    Public License. Secondly, it allows run-time switching of output devices
-    (via the -o switch). (<command>&dhpackage;</command> also allows configuring
-    a default output device at compile-time, but run-time switching is always
-    allowed). </para>
-
   </refsect1>
   <refsect1>
     <title>OPTIONS</title>
@@ -205,7 +198,7 @@
         <term><option>-S</option>
         </term>
         <listitem>
-          <para>Reporting song to AudioScrobbler (last.fm).
+          <para>Report song to AudioScrobbler (last.fm).
           </para>
         </listitem>
       </varlistentry> 

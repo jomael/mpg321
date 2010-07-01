@@ -4,8 +4,7 @@ Priority: optional
 Maintainer: Nanakos Chrysostomos <nanakos@wired-net.gr>
 Homepage: http://mpg321.sourceforge.net
 Build-Depends: debhelper (>> 7.0.0),libmad0-dev, libao-dev (>= 1.0.0), libid3tag0-dev, zlib1g-dev
-Standards-Version: 3.8.4
-DM-Upload-Allowed: yes
+Standards-Version: 3.9.0
 
 Package: mpg321
 Architecture: any

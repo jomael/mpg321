@@ -324,8 +324,9 @@ int main(int argc, char *argv[])
     if(options.opt & MPG321_PRINT_FFT)
 	    if(!(options.opt & MPG321_REMOTE_PLAY))
 	    {
-		    printf("FFT analysis can only be used in Remote mode play.\n");
-		    exit(1);
+		    /* printf("FFT analysis can only be used in Remote mode play.\n\n"); */
+		    usage(argv[0]);			
+		    exit(0);
 	    }
 
 

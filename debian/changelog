@@ -1,33 +1,20 @@
-mpg321 (0.2.11-4) unstable; urgency=high
+mpg321 (0.2.12-1) unstable; urgency=high
 
+  * New upstream release.
   * Added AudioScrobbler support.
   * Added FFT analysis support on PCM data for Remote mode play.
-  * mpg321 doesn't resample for the moment.
-    (Closes: Bug#118283),(Closes: Bug#200346).
-  * We don't need to compare mpg321 to mpg123 anymore. (Closes: Bug#533674). 
-  * Closing again wrong Bug number from the previous mpg321 version.
-    (Closes: Bug#181122).
-  * There seems to be no problem with skipping and too much CPU use with this
-    version of mpg321. (Closes: Bug#219794).
-  * No display problems on 64-bits CPUs. Problem fixed. (Closes: Bug#387939).
-  * mpg321 produced silent .wavs and played silence on some mp3s that had
-    bad CRC checksums on every frame. That was due to some really
-    brain-damaged encoders that produced these mp3s. Bug fixed in version
-    0.2.11-1. (Closes: Bug#150897).
-  * There are no weird pseudocommands in remote mode or I can't reproduce
-    them. So I am closing this bug until someone can reproduce the bug, which
-    I believe won't happen near soon because many interfaces use mpg321
-    without problems. (Closes: Bug#147744).
-  * Remote mode doesn't die on invalid mp3s anymore.It just exits.
-    (Closes: Bug#128676).
+  * mpg123 has been relicensed under the LGPL/GPL. Changed man page
+    accordingly. (Closes: Bug#533674).
   * mpg321 now exits code 1 after failing to play music. (Closes: Bug#501334).
   * Fixed ID3v2 tag problem which resulted in a splat-sound at the start of
     the file. Patch from Martin Wellard. Thanks.
   * Added support for recursive reading of directories. Patch from Giuseppe
     Scrivano <gscrivano@gnu.org> and Michal Čihař <nijel@debian.org>.
     (Closes: Bug#266887).
+  * Updated S-V to 3.9.0
+  	- debian/copyright file is now UTF-8 encoded.
 
- -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sat, 26 Jun 2010 02:46:28 +0300
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Tue, 29 Jun 2010 21:44:36 +0300
 
 mpg321 (0.2.11-3) unstable; urgency=high
 
