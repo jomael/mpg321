@@ -1,3 +1,14 @@
+mpg321 (0.2.13-1) unstable; urgency=low
+
+  * Added uClinux support for embedded systems (Blackfin, Atmel and others).
+  * Added some Basic Control Keys, Volume Up/Down & Skip, for the moment.
+  * Updated S-V to 3.9.1
+  * If mmap() fails we fall back to read(). (Closes: Bug#148971).
+    (Closes: Bug#196787)
+  * Removed built-in getopt function.
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Thu, 23 Sep 2010 21:38:00 +0300
+
 mpg321 (0.2.12-1) unstable; urgency=high
 
   * New upstream release.

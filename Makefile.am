@@ -6,9 +6,6 @@ mpg321_SOURCES = \
 	playlist.c \
 	network.c \
 	mpg321.h \
-	getopt.c \
-	getopt1.c \
-	getopt.h \
 	remote.c \
 	ao.c \
 	options.c \

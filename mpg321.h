@@ -39,8 +39,8 @@
 #include <ao/ao.h>
 #include <mad.h>
 
-#define FAKEVERSION "0.2.11-4"
-#define VERSIONDATE "2010/06/26"
+#define FAKEVERSION "0.2.13-1"
+#define VERSIONDATE "2010/09/20"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096
@@ -242,4 +242,9 @@ typedef short int sound_sample;
 
 fft_state *fft_init(void);
 
+/*Basic control keys */
+#define KEY_CTRL_VOLUME_UP	'*'
+#define KEY_CTRL_VOLUME_DOWN	'/'
+#define KEY_CTRL_NEXT_SONG	'n'
+/* This is it for the moment */
 #endif /* _MPG321_H_ */

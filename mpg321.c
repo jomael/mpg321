@@ -58,6 +58,18 @@
 #include <termios.h>
 #include <config.h>
 
+/* POSIX threads */
+#include <pthread.h>
+#include <semaphore.h>
+
+
+int pflag = 0;
+int volume = 0;
+int count = -1;
+struct termios old_terminal_settings,terminal_settings;
+sem_t main_lock;
+
+
 FILE *ctty, *tty_in, *tty_out;
 int TTY_FILENO;
 
@@ -79,6 +91,53 @@ int status = MPG321_STOPPED;
 int file_change = 0;
 
 char *id3_get_tag (struct id3_tag const *tag, char const *what, unsigned int maxlen);
+
+/* Basic control keys thread */
+void *read_keyb(void *ptr)
+{
+	int flags;
+	int ch;
+	sem_wait(&main_lock);
+	/* Get the current terminal settings for the first time*/
+	if (tcgetattr(0, &terminal_settings) < 0)
+		perror("tcgetattr()");
+	
+	memcpy(&old_terminal_settings, &terminal_settings, sizeof(struct termios));
+	terminal_settings.c_lflag &= ~(ICANON | ECHO);
+	if (tcsetattr(0, TCSANOW, &terminal_settings) < 0)
+		perror("tcsetattr ICANON");
+	
+	volume = (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0);
+	while(!pflag)
+	{
+		ch = getchar();
+		if(ch == KEY_CTRL_VOLUME_DOWN)
+		{
+			count = 1;
+			volume -= 3;
+			if(volume < 0)
+				volume = 0;
+			options.volume = mad_f_tofixed(volume / 100.0);
+			if(!(options.opt & MPG321_VERBOSE_PLAY))
+				fprintf(stdout,"Volume: %d%      \r",volume);
+		}
+		if(ch == KEY_CTRL_VOLUME_UP)
+		{
+			count = 1;
+			volume += 3;
+			if(volume > 100)
+				volume = 100;
+			options.volume = mad_f_tofixed(volume / 100.0);
+			if(!(options.opt & MPG321_VERBOSE_PLAY))
+				fprintf(stdout,"Volume: %d%      \r",volume);
+		}
+		if(ch == KEY_CTRL_NEXT_SONG)
+			kill(getpid(),SIGINT);
+	}
+	if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+		perror("tcsetattr ICANON");
+	return (void *)0;
+}
 
 /* Ignore child processes from the AudioScrobbler helper */
 RETSIGTYPE handle_sigchld(int sig)
@@ -301,7 +360,8 @@ int main(int argc, char *argv[])
     buffer playbuf;
     
     struct mad_decoder decoder;
-
+    pthread_t keyb_thread;
+    
     old_dir[0] = '\0';
 
     playbuf.pl = pl = new_playlist();
@@ -366,10 +426,19 @@ int main(int argc, char *argv[])
     {
         printf ("@R MPG123\n");
     }
+    /* Now create and detach the basic controls thread */
+    sem_init(&main_lock,0,0);
+    pthread_create(&keyb_thread,NULL,read_keyb,NULL);
+    pthread_detach(keyb_thread);
+    
     if(set_xterm)
     {
 	    tty_control();
 	    get_term_title(title);
+    }else
+    {
+	    /* Early thread start */
+	    sem_post(&main_lock);
     }
     /* Play the mpeg files or zip it! */
     while((currentfile = get_next_file(pl, &playbuf)))
@@ -517,6 +586,9 @@ int main(int argc, char *argv[])
             if((fd = open(currentfile, O_RDONLY)) == -1)
             {
                 mpg321_error(currentfile);
+		/* Restore TTY from keyboard reader thread */
+		if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+			perror("tcsetattr ICANON");
 		exit(1);
                 /* mpg123 stops immediately if it can't open a file */
 		/* If sth goes wrong break!!!*/
@@ -531,6 +603,8 @@ int main(int argc, char *argv[])
             
             if (!S_ISREG(stat.st_mode))
             {
+		    if(S_ISFIFO(stat.st_mode))
+			    goto fall_back_to_read_from_fd;
                 continue;
             }
             
@@ -549,18 +623,27 @@ int main(int argc, char *argv[])
             
             playbuf.frames = malloc((playbuf.num_frames + 1) * sizeof(void*));
             playbuf.times = malloc((playbuf.num_frames + 1) * sizeof(mad_timer_t));
-    
-            if((playbuf.buf = mmap(0, playbuf.length, PROT_READ, MAP_SHARED, fd, 0))
-                                == MAP_FAILED)
+#ifdef __uClinux__
+	    if((playbuf.buf = mmap(0, playbuf.length, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED)
+#else       
+ 	    if((playbuf.buf = mmap(0, playbuf.length, PROT_READ, MAP_SHARED, fd, 0)) == MAP_FAILED)
+#endif		    
             {
                 mpg321_error(currentfile);
                 continue;
             }
             
             playbuf.frames[0] = playbuf.buf;
+		    
+	    mad_decoder_init(&decoder, &playbuf, read_from_mmap, read_header, /*filter*/0,
             
-            mad_decoder_init(&decoder, &playbuf, read_from_mmap, read_header, /*filter*/0,
-                            output, handle_error, /* message */ 0);
+	    		    output, handle_error, /* message */ 0);
+fall_back_to_read_from_fd:	
+	    playbuf.fd = fd;
+	    playbuf.buf = malloc(BUF_SIZE);
+	    playbuf.length = BUF_SIZE;
+	    mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
+			    output, handle_error, /* message */ 0);
         }
 
         if(!(options.opt & MPG321_QUIET_PLAY))/*zip it!!!*/
@@ -609,6 +692,16 @@ int main(int argc, char *argv[])
 	if(set_xterm)
 	{
 		set_tty_restore();
+		if (tcgetattr(0, &terminal_settings) < 0)
+			perror("tcgetattr()");
+		memcpy(&old_terminal_settings, &terminal_settings, sizeof(struct termios));
+		/* disable canonical mode processing in the line discipline driver */
+		terminal_settings.c_lflag &= ~(ICANON | ECHO);
+		/* apply our new settings */
+		if (tcsetattr(0, TCSANOW, &terminal_settings) < 0)
+			perror("tcsetattr ICANON");
+		/* Late thread start */
+		sem_post(&main_lock);
 	}
         /* Every time the user gets us to rewind, we exit decoding,
            reinitialize it, and re-start it */
@@ -633,7 +726,8 @@ int main(int argc, char *argv[])
             char time_formatted[11];
             mad_timer_string(current_time, time_formatted, "%.1u:%.2u", MAD_UNITS_MINUTES,
                        MAD_UNITS_SECONDS, 0);
-            fprintf(stderr, "\n[%s] Decoding of %s finished.\n",time_formatted, basename(currentfile));
+	    fprintf(stdout,"                                                                            \r");
+	    fprintf(stderr, "\n[%s] Decoding of %s finished.\n",time_formatted, basename(currentfile));
         }
         
         if (options.opt & MPG321_REMOTE_PLAY && status == MPG321_STOPPED)
@@ -667,6 +761,10 @@ int main(int argc, char *argv[])
         ao_close(playdevice);
 
     ao_shutdown();
+    pflag = 1;
+    /* Restore TTY from keyboard reader thread */
+    if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+	    perror("tcsetattr ICANON");
     /*Restoring TTY*/
     if(set_xterm)
     {

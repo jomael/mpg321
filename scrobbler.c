@@ -78,7 +78,11 @@ void scrobbler_report(void)
         /*printf("Reporting to AudioScrobbler!\n");*/
         args[1] = "-vP";
     }
+#ifdef __uClinux__
+    switch(vfork()) {
+#else
     switch(fork()) {
+#endif
         case -1:
             /* Error */
             mpg321_error("forking for the scrobbler helper");

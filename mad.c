@@ -47,6 +47,9 @@
 
 unsigned long current_frame=0;
 
+/* Basic control keys global variables */
+extern int count, volume;
+
 enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
 {
     buffer *playbuf = (buffer *)data;
@@ -310,23 +313,39 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
         status = MPG321_PLAYING;
     }
 
+    if(count > 0)
+    {
+	    count++;
+	    if(count > 40)
+	    {
+		    if(!(options.opt & MPG321_VERBOSE_PLAY))
+			    fprintf(stdout,"                \r",volume);
+		    count = -1;
+		    fflush(stdout);
+	    }
+    }
+
     if (options.opt & MPG321_VERBOSE_PLAY)
     {
         if (!options.skip_printing_frames 
             || (options.skip_printing_frames && !(current_frame % options.skip_printing_frames)))
-			fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s], \r", current_frame, 
-                    playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+   
+	      	if(count > 0)
+			fprintf(stdout, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
+					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+		else if(count < 0)
+			fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s],                      \r", current_frame,
+					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
     }
-    
     else if (options.opt & MPG321_REMOTE_PLAY)
     {
-        if (!options.skip_printing_frames 
+    
+	    if (!options.skip_printing_frames 
             || (options.skip_printing_frames && !(current_frame % options.skip_printing_frames)))
             printf("@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
                 ((double)mad_timer_count(current_time, MAD_UNITS_CENTISECONDS)/100.0),
                 ((double)mad_timer_count(time_remaining, MAD_UNITS_CENTISECONDS)/100.0));
     }
-    
     return MAD_FLOW_CONTINUE;
 }        
 
@@ -647,8 +666,11 @@ int calc_length(char *file, buffer *buf)
     {
         buf->length -= 128; /* Correct for id3 tags */
     }
-    
+#ifdef __uClinux__
+    fdm = mmap(0, buf->length, PROT_READ, MAP_PRIVATE, f, 0);
+#else    
     fdm = mmap(0, buf->length, PROT_READ, MAP_SHARED, f, 0);
+#endif    
     if (fdm == MAP_FAILED)
     {
         mpg321_error(file);

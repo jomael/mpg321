@@ -257,6 +257,28 @@
       </varlistentry>
     </variablelist>
   </refsect1>
+
+ <refsect1>
+
+ <title>Basic keys: </title>
+ <variablelist>
+ <varlistentry>
+ <term><option> * or / </option>
+ </term>
+ <listitem>
+ <para>Increase or decrease volume.</para>
+ </listitem>
+ </varlistentry>
+ <varlistentry>
+ <term><option> n </option>
+ </term>
+ <listitem>
+ <para>Skip song.</para>
+ </listitem>
+ </varlistentry>
+ </variablelist>
+ </refsect1>
+
   <refsect1> 
     <title>AUTHOR</title>
 

@@ -20,7 +20,7 @@ AC_PREREQ(2.59)
 AC_INIT
 AC_CONFIG_SRCDIR([mad.c])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(mpg321, 0.2.11)
+AM_INIT_AUTOMAKE(mpg321, 0.2.12)
 
 # Checks for programs.
 AC_PROG_AWK
@@ -32,8 +32,9 @@ AC_PROG_LN_S
 AC_CHECK_LIB(mad,mad_decoder_run,,AC_MSG_ERROR(libmad is required to compile mpg321. See http://www.mars.org/home/rob/proj/mpeg/))
 AC_CHECK_LIB(z, compress2,,AC_MSG_ERROR("zlib is required to compile mpg321. Usually this is in a package called zlib-devel or zlib1g-dev."))
 AC_CHECK_LIB(id3tag,id3_tag_new,,AC_MSG_ERROR("libid3tag is required to compile mpg321. Find it in the MAD distribution at http://www.mars.org/home/rob/proj/mpeg/ - version 0.14.1 or better."), -lz)
+AC_CHECK_LIB(pthread, pthread_create,,AC_MSG_ERROR("POSIX Threads is required to compile mpg321."))
 
-LIBS="$LIBS -lz"
+LIBS="$LIBS -lz -lpthread -lm"
 
 XIPH_PATH_AO(,AC_MSG_ERROR(libao needed!))
 
