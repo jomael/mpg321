@@ -119,7 +119,7 @@ void *read_keyb(void *ptr)
 				volume = 0;
 			options.volume = mad_f_tofixed(volume / 100.0);
 			if(!(options.opt & MPG321_VERBOSE_PLAY))
-				fprintf(stdout,"Volume: %d%      \r",volume);
+				fprintf(stdout,"Volume: %d%%      \r",volume);
 		}
 		if(ch == KEY_CTRL_VOLUME_UP)
 		{
@@ -129,7 +129,7 @@ void *read_keyb(void *ptr)
 				volume = 100;
 			options.volume = mad_f_tofixed(volume / 100.0);
 			if(!(options.opt & MPG321_VERBOSE_PLAY))
-				fprintf(stdout,"Volume: %d%      \r",volume);
+				fprintf(stdout,"Volume: %d%%      \r",volume);
 		}
 		if(ch == KEY_CTRL_NEXT_SONG)
 			kill(getpid(),SIGINT);
@@ -236,7 +236,10 @@ void usage(char *argv0)
         "   --aggressive             Try to get higher priority\n"
         "   --help or --longhelp     Print this help screen\n"
         "   --version or -V          Print version information\n"
-        "\n"
+        "Basic keys:                                            \n"
+	"* or /   Increase or decrease volume.                  \n"
+	"n        Skip song.                                    \n"
+	"\n"
         "This version of mpg321 has been configured with " AUDIO_DEFAULT " as its default\n"
         "libao output device.\n" , argv0);
 }
@@ -426,19 +429,24 @@ int main(int argc, char *argv[])
     {
         printf ("@R MPG123\n");
     }
-    /* Now create and detach the basic controls thread */
-    sem_init(&main_lock,0,0);
-    pthread_create(&keyb_thread,NULL,read_keyb,NULL);
-    pthread_detach(keyb_thread);
-    
+
+     if (!(options.opt & MPG321_REMOTE_PLAY))
+     {
+	    /* Now create and detach the basic controls thread */
+	    sem_init(&main_lock,0,0);
+	    pthread_create(&keyb_thread,NULL,read_keyb,NULL);
+	    pthread_detach(keyb_thread);
+     }
     if(set_xterm)
     {
 	    tty_control();
 	    get_term_title(title);
     }else
     {
-	    /* Early thread start */
-	    sem_post(&main_lock);
+     	
+	    if (!(options.opt & MPG321_REMOTE_PLAY))
+		    /* Early thread start */
+		    sem_post(&main_lock);
     }
     /* Play the mpeg files or zip it! */
     while((currentfile = get_next_file(pl, &playbuf)))
@@ -761,10 +769,13 @@ fall_back_to_read_from_fd:
         ao_close(playdevice);
 
     ao_shutdown();
-    pflag = 1;
-    /* Restore TTY from keyboard reader thread */
-    if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
-	    perror("tcsetattr ICANON");
+     if (!(options.opt & MPG321_REMOTE_PLAY))
+     {
+	    pflag = 1;
+	    /* Restore TTY from keyboard reader thread */
+	    if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+		    perror("tcsetattr ICANON");
+     }
     /*Restoring TTY*/
     if(set_xterm)
     {

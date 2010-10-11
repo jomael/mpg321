@@ -319,7 +319,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 	    if(count > 40)
 	    {
 		    if(!(options.opt & MPG321_VERBOSE_PLAY))
-			    fprintf(stdout,"                \r",volume);
+			    fprintf(stdout,"                \r");
 		    count = -1;
 		    fflush(stdout);
 	    }
