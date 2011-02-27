@@ -3,11 +3,20 @@ mpg321 (0.2.13-1) unstable; urgency=low
   * Added uClinux support for embedded systems (Blackfin, Atmel and others).
   * Added some Basic Control Keys, Volume Up/Down & Skip, for the moment.
   * Updated S-V to 3.9.1
+       - debian/copyright file has been revised.
   * If mmap() fails we fall back to read(). (Closes: Bug#148971).
     (Closes: Bug#196787)
   * Removed built-in getopt function.
+  * Problem solved when -x option was invoked and mpg321 couldn't obtain the
+    current terminal file. If none is forthcoming (e.g. xterm window ops are
+    disabled) then mpg321 does not block.
+  * Removed the dependency for the libaudio-scrobbler-perl package from
+    debian/control file. (Closes: Bug#588051).
+  * Added LDFLAGS += -Wl,-z,defs -Wl,--as-needed in debian/rules file
+    to limit the dependencies a bit. Dropped '-c' option from 'install'
+    command. Thanks to Sven Hoexter <sven@timegate.de>.
 
- -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Thu, 23 Sep 2010 21:38:00 +0300
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 20 Feb 2011 15:35:00 +0300
 
 mpg321 (0.2.12-1) unstable; urgency=high
 

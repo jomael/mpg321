@@ -4,23 +4,19 @@
 #export DH_VERBOSE=1
 
 
-CFLAGS = -O2 -Wall -Wunused
-INSTALL_PROGRAM = /usr/bin/install -c
+CFLAGS = $(shell dpkg-buildflags --get CFLAGS) -Wall -Wunused
 
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -g
-endif
+LDFLAGS += -Wl,-z,defs -Wl,--as-needed
 
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-INSTALL_PROGRAM += -s
-endif
+INSTALL_PROGRAM = /usr/bin/install 
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
 	
-	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
+#CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
+	./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
 	touch configure-stamp
 
 build: configure-stamp build-stamp
@@ -45,10 +41,11 @@ install: build
 	dh_testdir
 	dh_testroot
 #	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	# mandir here has DESTDIR prepended to it
-	\$(MAKE) install DESTDIR=$(CURDIR)/debian/mpg321 mandir=/usr/share/man INSTALL_PROGRAM="$(INSTALL_PROGRAM)"
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/mpg321 mandir=/usr/share/man INSTALL_PROGRAM="$(INSTALL_PROGRAM)"
 
 
 # Build architecture-independent files here.

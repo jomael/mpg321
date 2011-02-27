@@ -2597,7 +2597,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=mpg321
- VERSION=0.2.12
+ VERSION=0.2.13
 
 
 cat >>confdefs.h <<_ACEOF

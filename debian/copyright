@@ -1,5 +1,29 @@
-mpg321 is Copyright © 2001 Joe Drew, and placed under the GNU General
-Public License, version 2 or later.
+This package was debianized by Joe Drew and is now maintained by Nanakos
+Chrysostomos <nanakos@wired-net.gr>
+
+It was downloaded from <http://mpg321.sourceforge.net>
+
+Upstream Author(s): Nanakos Chrysostomos <nanakos@wired-net.gr>
+
+Copyright:
+	
+	Copyright © 1991 Massachusetts Institute of Technology
+	Copyright © 1996-2011  Free Software Foundation, Inc.
+	Copyright © 1999 Loki Entertainment Software
+	Copyright © 1999 Richard Boulton <richard@tartarus.org>
+	Copyright © 1999 Ralph Loader <suckfish@ihug.co.nz>
+	Copyright © 2000-2001 Robert Leslie
+	Copyright © 2001-2002 Jow Drew <drew@debian.org>
+	Copyright © 2005-2006 Peter Pentchev
+	Copyright © 2010 Giuseppe Scrivano <gscrivano@gnu.org>
+	Copyright © 2006-2011 Nanakos Chrysostomos <nanakos@wired-net.gr>
+
+License:
+
+mpg321 is placed under the GNU General Public License, version 2 or later.
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in the directory "/usr/share/common-licenses"
 
 It is based on plaympeg, Copyright © 1999 Loki Entertainment Software.
 
@@ -23,3 +47,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------
+
+The Debian packaging is:
+
+Copyright (C) 2010-2011 Nanakos Chrysostomos <nanakos@wired-net.gr>
+and is licensed under the GPL version 2,
+see "/usr/share/common-licenses/GPL-2".
+

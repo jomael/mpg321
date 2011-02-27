@@ -45,6 +45,9 @@
 /* Define to 1 if you have the `mad' library (-lmad). */
 #undef HAVE_LIBMAD
 
+/* Define to 1 if you have the `pthread' library (-lpthread). */
+#undef HAVE_LIBPTHREAD
+
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
 

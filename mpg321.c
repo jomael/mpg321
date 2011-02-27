@@ -95,7 +95,6 @@ char *id3_get_tag (struct id3_tag const *tag, char const *what, unsigned int max
 /* Basic control keys thread */
 void *read_keyb(void *ptr)
 {
-	int flags;
 	int ch;
 	sem_wait(&main_lock);
 	/* Get the current terminal settings for the first time*/
@@ -917,7 +916,8 @@ int set_tty_raw()
     tty_ts.c_iflag = 0;
     tty_ts.c_lflag = 0;
 
-    tty_ts.c_cc[VMIN] = 1;
+    //tty_ts.c_cc[VMIN] = 1;
+    tty_ts.c_cc[VMIN] = 0;
     tty_ts.c_cc[VTIME] = 1;
     tty_ts.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(TTY_FILENO, TCSANOW, &tty_ts);
@@ -1036,16 +1036,32 @@ void get_term_title(char *title)
 	raw_print(temp);
 
 	n = tty_read(buffer,sizeof(buffer));
+	if(n==0)
+		goto read_failure;
 	if(n==1)
-		n+= tty_read(buffer+1,sizeof(buffer)-1);
+	{
+		int n2 = tty_read(buffer+1,sizeof(buffer)-1);
+		if(n2==0)
+			goto read_failure;
+		n+=n2;
+	}
+//	n+= tty_read(buffer+1,sizeof(buffer)-1);
 
 	while( !(buffer[n-2] == '\033' && buffer[n-1] == '\\') ) {
-		n += tty_read(buffer+n,sizeof(buffer)-n);
+//		n += tty_read(buffer+n,sizeof(buffer)-n);
+		int n2 = tty_read(buffer+1,sizeof(buffer)-1);
+		if(n2==0)
+			goto read_failure;
+		n+=n2;
 	}
 
 	buffer[n-2]= '\0';
 
 	snprintf((char *)title,sizeof(buffer),"%s",buffer+3);
+	return;
+
+read_failure:
+	sprintf((char *)title,"xterm");
 }
 
 static enum mad_flow handle_error(void *data, struct mad_stream *stream, struct mad_frame *frame)
