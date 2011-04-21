@@ -39,8 +39,8 @@
 #include <ao/ao.h>
 #include <mad.h>
 
-#define FAKEVERSION "0.2.13-1"
-#define VERSIONDATE "2010/09/20"
+#define FAKEVERSION "0.2.13-2"
+#define VERSIONDATE "2011/03/27"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096
@@ -152,6 +152,7 @@ enum
     MPG321_USE_SCROBBLER  = 0x00020000,
     MPG321_RECURSIVE_DIR  = 0x00040000,
     MPG321_PRINT_FFT	  = 0x00080000,
+    MPG321_ENABLE_BASIC	  = 0x00100000,
 };
 
 #define DEFAULT_PLAYLIST_SIZE 1024

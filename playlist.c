@@ -120,11 +120,18 @@ void trim_whitespace(char *str)
     
     strncpy(str, ptr, pos+1);
 }    
-    
+   
+static inline double square(double a) {
+	return a*a;
+}
+
 char * get_next_file(playlist *pl, buffer *buf)
 {
     static int i = 0;
     
+    char *swap;
+    int j,n;
+
     if (options.opt & MPG321_REMOTE_PLAY)
     {
         while (strlen(pl->remote_file) == 0 && !quit_now)
@@ -149,13 +156,35 @@ char * get_next_file(playlist *pl, buffer *buf)
     
     else
     {
+	    /* randomly choose a file from the first half of the playlist,
+	       then append it to the end of the playlist. This way no file
+	       gets repeated too early. We also give more priority to
+	       files that were played less recently. If this option is
+	       selected, we also shuffle ahead of time, so that the files
+	       are random in the beginning. */
         if (!pl->numfiles)
             return NULL;
 
-        i = (pl->numfiles-1) * ((double)rand()/RAND_MAX);
-
-        return pl->files[i];
-    }
+//        i = (pl->numfiles-1) * ((double)rand()/RAND_MAX);
+	 /* determine the number of "eligible" files at the start of
+	    +          the playlist. Special case: when there are only two files,
+	    +          we must sometimes repeat, or else it will be A B A B A... */
+       if (pl->numfiles == 2) {
+	       n = 2;
+       } else {
+	       n = (pl->numfiles+1)/2;
+       }
+       /* the square of a random number is still in [0,1], but biased
+          towards 0 */
+       i = n * square((double)rand()/RAND_MAX);
+       swap = pl->files[i];
+       for (j=i; j<pl->numfiles-1; j++) {
+	       pl->files[j] = pl->files[j+1];
+       }
+       pl->files[pl->numfiles-1] = swap;
+//        return pl->files[i];
+       return pl->files[pl->numfiles-1];
+     }
 }
 
 void add_path(playlist *pl, char *path)

@@ -111,6 +111,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "scrobbler", 0, 0, 'S' },
         { "recursive", 0, 0, 'B' },
         { "fft", 0, 0, 'F' },
+        { "basickeys", 0, 0, 'K' },
             
         /* takes parameters */
         { "frames", 1, 0, 'n' },
@@ -130,7 +131,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
     while ((c = getopt_long(argc, argv, 
                                 "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
-                                "A:D:SBFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
+                                "A:D:SBKFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
                         long_options, &option_index)) != -1)
     {            
         switch(c)
@@ -166,6 +167,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
                 break;
                 
             case 'Z':
+                shuffle_play = 1;
                 set_random_play(pl);
                 break;
                 
@@ -240,6 +242,10 @@ void parse_options(int argc, char *argv[], playlist *pl)
 		options.opt |= MPG321_PRINT_FFT;
 		break;
                 
+	    case 'K':
+		options.opt |= MPG321_ENABLE_BASIC;
+		break;
+
             case 'o':
                 if (strcmp(optarg, "alsa") == 0)
                 {

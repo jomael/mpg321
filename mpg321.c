@@ -228,6 +228,7 @@ void usage(char *argv0)
         "   -F                       Turn on FFT analysis on PCM data. Remote mode only\n"
         "   -B                       Read recursively the given directories\n"
         "   -S                       Report mp3 file to AudioScrobbler\n"
+        "   -K                       Enable Basic Keys\n"
         "   -x                       Set xterm title setting\n"
         "   -p hostname:port         Use proxy server\n"
         "   -u username:password     Use proxy server basic authentication\n"
@@ -431,10 +432,13 @@ int main(int argc, char *argv[])
 
      if (!(options.opt & MPG321_REMOTE_PLAY))
      {
-	    /* Now create and detach the basic controls thread */
-	    sem_init(&main_lock,0,0);
-	    pthread_create(&keyb_thread,NULL,read_keyb,NULL);
-	    pthread_detach(keyb_thread);
+	     if(options.opt & MPG321_ENABLE_BASIC)
+	     {
+	 	     /* Now create and detach the basic controls thread */
+		     sem_init(&main_lock,0,0);
+	 	     pthread_create(&keyb_thread,NULL,read_keyb,NULL);
+		     pthread_detach(keyb_thread);
+	     }
      }
     if(set_xterm)
     {
@@ -605,6 +609,7 @@ int main(int argc, char *argv[])
             if(fstat(fd, &stat) == -1)
             {
                 mpg321_error(currentfile);
+		close(fd);
                 continue;
             }
             
@@ -612,6 +617,8 @@ int main(int argc, char *argv[])
             {
 		    if(S_ISFIFO(stat.st_mode))
 			    goto fall_back_to_read_from_fd;
+
+		close(fd);    
                 continue;
             }
             
@@ -707,8 +714,11 @@ fall_back_to_read_from_fd:
 		/* apply our new settings */
 		if (tcsetattr(0, TCSANOW, &terminal_settings) < 0)
 			perror("tcsetattr ICANON");
-		/* Late thread start */
-		sem_post(&main_lock);
+		if(options.opt & MPG321_ENABLE_BASIC)
+		{
+			/* Late thread start */
+			sem_post(&main_lock);
+		}
 	}
         /* Every time the user gets us to rewind, we exit decoding,
            reinitialize it, and re-start it */
@@ -770,10 +780,13 @@ fall_back_to_read_from_fd:
     ao_shutdown();
      if (!(options.opt & MPG321_REMOTE_PLAY))
      {
-	    pflag = 1;
-	    /* Restore TTY from keyboard reader thread */
-	    if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
-		    perror("tcsetattr ICANON");
+	     if(options.opt & MPG321_ENABLE_BASIC)
+	     {
+	 	     pflag = 1;
+		     /* Restore TTY from keyboard reader thread */
+	 	     if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+		 	     perror("tcsetattr ICANON");
+	     }
      }
     /*Restoring TTY*/
     if(set_xterm)
