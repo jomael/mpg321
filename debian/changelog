@@ -11,7 +11,7 @@ mpg321 (0.2.13-3) unstable; urgency=low
     where x and y are numbers. For example, if there is only one device 
     installed, in most cases, the device should be named hw:0,0. 
     When there is only one device, the device should always have the 
-    same name and numbers. Finally if you default driver which mpg321
+    same name and numbers. Finally if the default driver which mpg321
     is compiled is ALSA then you don't have to specify it with the '-o'
     option and you can use '-a' only to specify the audio device.
     (Closes: Bug#623941).

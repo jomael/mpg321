@@ -448,8 +448,13 @@ int main(int argc, char *argv[])
     {
      	
 	    if (!(options.opt & MPG321_REMOTE_PLAY))
+	    {
+	    	    if (tcgetattr(0, &terminal_settings) < 0)
+	    		    perror("tcgetattr()");
+	    	    memcpy(&old_terminal_settings, &terminal_settings, sizeof(struct termios));
 		    /* Early thread start */
 		    sem_post(&main_lock);
+	    }
     }
     /* Play the mpeg files or zip it! */
     while((currentfile = get_next_file(pl, &playbuf)))
