@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
-    Copyright (C) 2006-2010 Nanakos Chrysostomos
+    Copyright (C) 2006-2011 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -598,8 +598,9 @@ int main(int argc, char *argv[])
             {
                 mpg321_error(currentfile);
 		/* Restore TTY from keyboard reader thread */
-		if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
-			perror("tcsetattr ICANON");
+	        if(options.opt & MPG321_ENABLE_BASIC)
+			if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
+				perror("tcsetattr ICANON");
 		exit(1);
                 /* mpg123 stops immediately if it can't open a file */
 		/* If sth goes wrong break!!!*/

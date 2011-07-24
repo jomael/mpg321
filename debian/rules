@@ -19,7 +19,11 @@ configure-stamp:
 	./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
 	touch configure-stamp
 
-build: configure-stamp build-stamp
+
+
+build: configure-stamp build-arch build-indep
+build-arch: build-stamp
+build-indep: build-stamp
 build-stamp:
 	dh_testdir
 

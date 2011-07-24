@@ -329,7 +329,7 @@ void open_ao_playdevice(struct mad_header const *header)
             ao_option *ao_options = NULL;
             int driver_id = ao_driver_id(options.devicetype);
             
-            if (driver_id < 0)
+	    if (driver_id < 0)
             {
                 fprintf(stderr, "Can't open unknown ao driver %s\n", options.devicetype);
                 exit(1);
@@ -383,18 +383,23 @@ void open_ao_playdevice(struct mad_header const *header)
             ao_option *ao_options = NULL;
             int driver_id = ao_driver_id("alsa");
             char *c;
-
-            if (options.device)
+            char *card=(char *)malloc((int)16);
+            memset(card,0,16); 
+	    strncat(card,"alsa:\0",6);
+	    
+	    if (options.device)
             {
-                if ((c = strchr(options.device, ':')) == NULL || strlen(c+1) < 1)
+	    	strcat(card,options.device);
+                //if ((c = strchr(options.device, ':')) == NULL || strlen(c+1) < 1)
+                if ((c = strchr(card, ':')) == NULL || strlen(c+1) < 1)
                 {
                     fprintf(stderr, "Poorly formed ALSA card:device specification %s", options.device);
                     exit(1);
                 }
 
                 *(c++) = '\0'; /* change the : to a null to create two separate strings */
-
-                ao_append_option(&ao_options, "card", options.device);
+                //ao_append_option(&ao_options, "card", options.device);
+                ao_append_option(&ao_options, "card", card);
                 ao_append_option(&ao_options, "dev", c);
             }
 

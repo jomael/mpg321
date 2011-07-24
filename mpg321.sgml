@@ -90,7 +90,9 @@
           </para>
           <para>This option has no effect with <option>-o arts</option>.</para>
           <para>For <option>-o esd</option>, specify the host on which esd is running; defaults to localhost. </para>
-          <para>For <option>-o alsa</option>, specify card:device; defaults to 0:0.</para>
+          <para>For <option>-o alsa</option>, specify audio device using the hw:x,y syntax, where x and y are numbers, default is hw:0,0.
+	  	For example, if there is only one device installed, in most cases, the device should be named hw:0,0. 
+		When there is only one device, the device should always have the same name and numbers.</para>
         </listitem>
       </varlistentry>
       <varlistentry>

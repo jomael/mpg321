@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
-    Copyright (C) 2006, 2007, 2008, 2009, 2010 Nanakos Chrysostomos
+    Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -247,5 +247,6 @@ fft_state *fft_init(void);
 #define KEY_CTRL_VOLUME_UP	'*'
 #define KEY_CTRL_VOLUME_DOWN	'/'
 #define KEY_CTRL_NEXT_SONG	'n'
+#define KEY_CTRL_PAUSE_SONG	'p'
 /* This is it for the moment */
 #endif /* _MPG321_H_ */

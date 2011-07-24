@@ -1,4 +1,3 @@
-* fall back on read() if mmap() fails.
 * Make sure that removing the if (quit_now) stuff from mpg321.c didn't wreck
   remote control mode
 * fix repeating end of file for pipes

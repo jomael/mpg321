@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     options.c: Copyright (C) 2001, 2002 Joe Drew
-    	       Copyright (C) 2006, 2007, 2008, 2009, 2010 Nanakos Chrysostomos
+    	       Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 Nanakos Chrysostomos
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
     Copyright (C) 1999 Loki Entertainment Software

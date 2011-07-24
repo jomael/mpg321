@@ -1,3 +1,23 @@
+mpg321 (0.2.13-3) unstable; urgency=low
+
+  * Fixed the really annoying bug which didn't restore the TTY 
+    when mpg321 exited.
+  * Updated S-V to 3.9.2 
+  	- debian/copyright file has been revised.
+  	- debian/rules file has been revised.
+  * Fixed '-a' option to conform with ALSA's uniform device naming. Also
+    changed man to conform with this change. Now you can use alsa driver
+    by setting the name of the audio device using the hw:x,y syntax, 
+    where x and y are numbers. For example, if there is only one device 
+    installed, in most cases, the device should be named hw:0,0. 
+    When there is only one device, the device should always have the 
+    same name and numbers. Finally if you default driver which mpg321
+    is compiled is ALSA then you don't have to specify it with the '-o'
+    option and you can use '-a' only to specify the audio device.
+    (Closes: Bug#623941).
+  
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 24 Jul 2011 15:08:09 +0300
+
 mpg321 (0.2.13-2) unstable; urgency=low
 
   * Added '-K' option so the user can enable/disable the Basic Keys
