@@ -221,6 +221,13 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-3</option>, <option>--restart</option>
+        </term>
+        <listitem>
+          <para>Restart "remote shell". Used only when in "Remote control" mode.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><option>--stereo</option>
         </term>
         <listitem>

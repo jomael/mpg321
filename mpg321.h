@@ -39,8 +39,8 @@
 #include <ao/ao.h>
 #include <mad.h>
 
-#define FAKEVERSION "0.2.13-2"
-#define VERSIONDATE "2011/03/27"
+#define FAKEVERSION "0.2.13-4"
+#define VERSIONDATE "2011/09/29"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096

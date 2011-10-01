@@ -44,6 +44,7 @@ extern int proxy_enable;
 extern char *proxy_server;
 extern int auth_enable;
 extern int auth_enable_var;
+extern remote_restart;
 /*Basic Authentication Arguments*/
 char *basic_auth = NULL;
 
@@ -112,6 +113,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "recursive", 0, 0, 'B' },
         { "fft", 0, 0, 'F' },
         { "basickeys", 0, 0, 'K' },
+        { "restart", 0, 0, '3' },
             
         /* takes parameters */
         { "frames", 1, 0, 'n' },
@@ -131,7 +133,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
     while ((c = getopt_long(argc, argv, 
                                 "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
-                                "A:D:SBKFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:",     /* implemented */
+                                "A:D:SBKFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:3",     /* implemented */
                         long_options, &option_index)) != -1)
     {            
         switch(c)
@@ -314,7 +316,9 @@ void parse_options(int argc, char *argv[], playlist *pl)
             case 'G':
                 options.skip_printing_frames = atoi(optarg);
                 break;
-
+	    case '3':
+		remote_restart = 1;
+		break;
             case 'V':
                 printf("mpg321 version " VERSION ". Copyright (C) 2001, 2002 Joe Drew,\n"
 		       "now maintained by Nanakos Chrysostomos and others.\n\n"

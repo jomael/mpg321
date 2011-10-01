@@ -1,3 +1,17 @@
+mpg321 (0.2.13-4) unstable; urgency=low
+
+  * Fixed bug when trying to "load file" from a remote instance and 
+    an error was raised repeatdly until mpg321 process died with 
+    "too many open files". (Closes: Bug#128676)
+  * Added '-3' or '--restart' option that handles non existent or 
+    corrupted files more elegantly when in remote mode. When option 
+    is enabled the remote shell does not die and is restarted waiting
+    for a new command.
+  * Fixed FTBFS for mpg321 by removing debian_changes patch file in 
+    debian/patches directory. (Closes: Bug#643222).
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Thu, 29 Sep 2011 19:33:24 +0300
+
 mpg321 (0.2.13-3) unstable; urgency=low
 
   * Fixed the really annoying bug which didn't restore the TTY 

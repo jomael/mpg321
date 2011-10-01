@@ -89,6 +89,7 @@ mad_timer_t current_time;
 mpg321_options options = { 0, NULL, NULL, 0 , 0, 0};
 int status = MPG321_STOPPED;
 int file_change = 0;
+int remote_restart = 0;
 
 char *id3_get_tag (struct id3_tag const *tag, char const *what, unsigned int maxlen);
 
@@ -359,6 +360,7 @@ int main(int argc, char *argv[])
     playlist *pl = NULL;
     struct id3_file *id3struct = NULL;
     struct id3_tag *id3tag = NULL;
+    int retval;
 
     buffer playbuf;
     
@@ -606,6 +608,19 @@ int main(int argc, char *argv[])
 	        if(options.opt & MPG321_ENABLE_BASIC)
 			if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
 				perror("tcsetattr ICANON");
+		if(set_xterm)
+	    	{
+			set_tty_restore();
+	    		osc_print(0,0,title);
+	    		if (ctty)
+	    			fclose(ctty);
+	    	}
+		if( options.opt & MPG321_REMOTE_PLAY)
+			if(remote_restart)
+			{	
+				clear_remote_file(pl); /* If restart is enabled, restart remote shell when file doesn't exist*/
+				continue;
+			}
 		exit(1);
                 /* mpg123 stops immediately if it can't open a file */
 		/* If sth goes wrong break!!!*/
@@ -628,7 +643,24 @@ int main(int argc, char *argv[])
                 continue;
             }
             
-            calc_length(currentfile, &playbuf);
+            retval = calc_length(currentfile, &playbuf);
+	    if(retval < 0)
+	    {
+		    if(options.opt & MPG321_REMOTE_PLAY)
+		    {
+			    fprintf(stderr,"@E Corrupted file: %s\n",currentfile);
+			    close(fd);
+			    if(remote_restart)
+			    {
+				    clear_remote_file(pl); /* If restart is enabled, restart remote shell when file is corrupted */
+				    continue;
+			    }
+			    break;
+		    }
+		    mpg321_error(currentfile);
+		    close(fd);
+		    break;
+	    }
 
 	    if((options.opt & MPG321_VERBOSE_PLAY) && (options.opt & MPG321_USE_SCROBBLER))
 		    fprintf(stderr, "Track duration: %ld seconds\n",playbuf.duration.seconds);
