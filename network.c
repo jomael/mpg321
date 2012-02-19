@@ -55,6 +55,7 @@ char *proxy_server;
 int auth_enable = 0;
 int auth_enable_var = 0;
 extern char authstring[80];
+int http_file_length = 0;
 
 int shoutcast(int);
 
@@ -511,6 +512,13 @@ int http_open(char *arg)
 		  return 0;
 		}
 	      IFVERB printf( "HTTP header: >%s<\n", http_response );
+	      if(!strncmp(http_response, "Content-Length: ", 16))
+	      {
+		            char http_length[20];
+			    sprintf(http_length,"%s",http_response+16);
+			    http_file_length = atoi(http_length);
+
+	      }
 	      if(!strncmp(http_response, "Content-Type: ", 14))
 		{
 		  IFVERB printf( "Content-Type: >%s<\n", http_response+14 );

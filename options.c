@@ -51,6 +51,8 @@ char *basic_auth = NULL;
 /*xterm title setting flag*/
 extern int set_xterm;
 
+extern int buffer_size;
+
 void parse_options(int argc, char *argv[], playlist *pl)
 {
     struct option long_options[] =
@@ -132,15 +134,15 @@ void parse_options(int argc, char *argv[], playlist *pl)
     options.maxframes=-1;
 
     while ((c = getopt_long(argc, argv, 
-                                "OPLTNEI824cy01mCd:h:f:b:r:G:" /* unimplemented */
-                                "A:D:SBKFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:3",     /* implemented */
+                                "OPLTNEI824cy01mCd:h:f:r:G:" /* unimplemented */
+                                "A:D:SBKFvqtsVHzZRxo:n:@:k:w:a:g:l:p:u:U:3b:",     /* implemented */
                         long_options, &option_index)) != -1)
     {            
         switch(c)
         {
             case 'O': case 'P': case 'L': case 'N': case 'E': case '8':
             case '2': case '4': case 'c': case 'y': case '0': case '1': case 'm': case 'C':
-            case 'd': case 'h': case 'f': case 'b': 
+            case 'd': case 'h': case 'f': 
                 break;
 	    case 'x':
 		set_xterm=1;
@@ -247,7 +249,10 @@ void parse_options(int argc, char *argv[], playlist *pl)
 	    case 'K':
 		options.opt |= MPG321_ENABLE_BASIC;
 		break;
-
+	    case 'b':
+		options.opt |= MPG321_ENABLE_BUFFER;
+		buffer_size = atoi(optarg);
+		break;
             case 'o':
                 if (strcmp(optarg, "alsa") == 0)
                 {
@@ -294,7 +299,8 @@ void parse_options(int argc, char *argv[], playlist *pl)
                 break;    
             
             case 'g':
-                options.volume = mad_f_tofixed(atoi(optarg)/100.0);
+                //options.volume = mad_f_tofixed(atoi(optarg)/100.0);
+                options.volume = atoi(optarg);
 		break;
 
             case 'l':

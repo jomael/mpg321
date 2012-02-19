@@ -42,6 +42,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #include "mpg321.h"
 
@@ -49,6 +52,8 @@ unsigned long current_frame=0;
 
 /* Basic control keys global variables */
 extern int count, volume;
+extern int http_file_length;
+
 
 enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
 {
@@ -61,6 +66,7 @@ enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
     {
         status = MPG321_STOPPED;
         if (options.opt & MPG321_REMOTE_PLAY) printf("@P 3\n");
+	if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->done = 1;
         return MAD_FLOW_STOP;
     }
 
@@ -84,6 +90,8 @@ enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
 
     playbuf->done = 1;
 
+    current_frame = 0;
+
     mad_stream_buffer(stream, mpegdata, playbuf->length - (mpegdata - playbuf->buf));
     
     return MAD_FLOW_CONTINUE;
@@ -99,6 +107,13 @@ enum mad_flow read_from_fd(void *data, struct mad_stream *stream)
     if(playbuf->done)
     {
         status = MPG321_STOPPED;
+	if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->done = 1;
+	if((options.opt & MPG321_ENABLE_BUFFER) && Decoded_Frames->total_decoded_frames==0)
+	{
+            static struct sembuf release_sops = {1, 1, 0};
+	    semop(semarray,&release_sops,1);
+	
+	}
         return MAD_FLOW_STOP;
     }
 
@@ -125,6 +140,7 @@ enum mad_flow read_from_fd(void *data, struct mad_stream *stream)
 		     BUF_SIZE - bytes_to_preserve);
     if (readbytes <= 0) {
         playbuf->done = 1;
+	if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->done = 1;
     } else {
         mad_stream_buffer(stream, playbuf->buf, readbytes+bytes_to_preserve);
     }
@@ -140,8 +156,8 @@ char * layerstring(enum mad_layer layer)
             return "I";
         case MAD_LAYER_II:
             return "II";
-        case MAD_LAYER_III:
-            return "III";
+case MAD_LAYER_III:
+    return "III";
         default:
             return "?";
     }
@@ -205,7 +221,8 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
     
     buffer *playbuf = (buffer *)data;
     mad_timer_t time_remaining;
-    
+    char *ao_time;
+
     if (stop_playing_file)
     {
         stop_playing_file = 0;
@@ -227,6 +244,8 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
     {
         frames_played = 0;
         status = MPG321_STOPPED;
+	if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->done = 1;
+	//fprintf(stderr,"Total D: %d\n",Decoded_Frames->total_decoded_frames);
         return MAD_FLOW_STOP;
     }
 
@@ -249,6 +268,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
             time_remaining = current_time;
         else
             time_remaining = playbuf->duration;
+
 
         mad_timer_negate(&current_time);
 
@@ -313,16 +333,26 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
         status = MPG321_PLAYING;
     }
 
-    if(count > 0)
+    if(!(options.opt & MPG321_ENABLE_BUFFER))
     {
-	    count++;
-	    if(count > 40)
+	    if(count > 0)
 	    {
-		    if(!(options.opt & MPG321_VERBOSE_PLAY))
-			    fprintf(stdout,"                \r");
-		    count = -1;
-		    fflush(stdout);
+		    count++;
+		    if(count > 40)
+		    {
+			    if(!(options.opt & MPG321_VERBOSE_PLAY))
+				    fprintf(stdout,"                \r");
+			    count = -1;
+			    fflush(stdout);
+		    }
 	    }
+    }
+
+    if(options.opt & MPG321_ENABLE_BUFFER)
+    {
+	    ao_time = (Output_Queue+mad_decoder_position)->time;
+	    (Output_Queue+mad_decoder_position)->num_frames = playbuf->num_frames - current_frame;
+	    if(Decoded_Frames->is_file) (Output_Queue+mad_decoder_position)->seconds = time_remaining.seconds;
     }
 
     if (options.opt & MPG321_VERBOSE_PLAY)
@@ -331,20 +361,57 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
             || (options.skip_printing_frames && !(current_frame % options.skip_printing_frames)))
    
 	      	if(count > 0)
-			fprintf(stdout, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
+		{
+/*			if(options.opt & MPG321_ENABLE_BUFFER)
+			{	
+				sprintf(ao_time, "Frame# %5lu [%5lu], Time: %s [%s], \r", current_frame,
 					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+				//sprintf(ao_time, "Frame# %5lu [%5lu], Time: %s [%s], \r", current_frame,
+				//	playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+				//sprintf(ao_time, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
+				//	playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+			}else*/
+			{
+				fprintf(stdout, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
+					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+			}
+		}
 		else if(count < 0)
-			fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s],                      \r", current_frame,
+		{
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+//				sprintf(ao_time, "Frame# %5lu [%5lu], Time: %s [%s],                     \r", current_frame,
+				sprintf(ao_time, "Frame# %5lu [%5lu], Time: %s [%s],                 \r", current_frame,
 					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+			}
+			else
+			{
+				
+				fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s],                      \r", current_frame,
+					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
+			}
+		}
     }
     else if (options.opt & MPG321_REMOTE_PLAY)
     {
     
 	    if (!options.skip_printing_frames 
             || (options.skip_printing_frames && !(current_frame % options.skip_printing_frames)))
-            printf("@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
-                ((double)mad_timer_count(current_time, MAD_UNITS_CENTISECONDS)/100.0),
-                ((double)mad_timer_count(time_remaining, MAD_UNITS_CENTISECONDS)/100.0));
+	    {
+		    if(options.opt & MPG321_ENABLE_BUFFER)
+		    {
+			    sprintf(ao_time,"@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
+				    	    ((double)mad_timer_count(current_time, MAD_UNITS_CENTISECONDS)/100.0),
+			    		    ((double)mad_timer_count(time_remaining, MAD_UNITS_CENTISECONDS)/100.0));
+		    }
+		    else
+		    {
+
+			    fprintf(stdout,"@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
+				    	    ((double)mad_timer_count(current_time, MAD_UNITS_CENTISECONDS)/100.0),
+			    		    ((double)mad_timer_count(time_remaining, MAD_UNITS_CENTISECONDS)/100.0));
+		    }
+	    }
     }
     return MAD_FLOW_CONTINUE;
 }        
@@ -553,7 +620,11 @@ void pause_play(buffer *buf, playlist *pl)
         strncpy(file, buf->filename, PATH_MAX);
         file[PATH_MAX-1]='\0';
         clear_remote_file(pl);
-        seek = current_frame;
+	if(options.opt & MPG321_ENABLE_BUFFER)
+		seek = Decoded_Frames->total_played_frames;
+	else
+		seek = current_frame;
+	if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->stop_playing_file = 1;
         printf("@P 1\n");
     }
     
@@ -564,7 +635,9 @@ void pause_play(buffer *buf, playlist *pl)
         play_remote_file(pl, file);
         file[0] = '\0';
         options.seek = seek;
+	//fprintf(stderr,"options.seek = %d\n",seek);
         current_frame = 0;
+	mad_decoder_position = 0;
         printf("@P 2\n");
     }
 }
@@ -616,13 +689,27 @@ enum mad_flow move(buffer *buf, signed long frames)
 
     return 0;
 }
-    
+
+int calc_http_length(buffer *buf)
+{
+	if(http_file_length)
+		buf->length = http_file_length;
+
+	return 0;
+}
+
 int calc_length(char *file, buffer *buf)
 {
     int f;
     struct stat filestat;
-    void *fdm;
+    void *fdm = NULL;
     char buffer[3];
+    
+    //if(!strstr(file,".mp3") && !strstr(file,".MP3"))
+   // {
+//	    mpg321_error(file);
+//	    return -1;
+  //  }
 
     f = open(file, O_RDONLY);
 
@@ -859,22 +946,34 @@ enum mad_flow output(void *data,
     register signed int sample;
     register mad_fixed_t tempsample;
 
-    /* We need to know information about the file before we can open the playdevice
-       in some cases. So, we do it here. */
-    if (!playdevice)
-    {
-        channels = MAD_NCHANNELS(header);
-        rate = header->samplerate;
-        open_ao_playdevice(header);        
-    }
 
-    else if ((channels != MAD_NCHANNELS(header) || rate != header->samplerate) && playdevice_is_live())
+    /* Semaphore operations */
+    static struct sembuf read_sops = {0, -1, 0};
+    static struct sembuf write_sops = {1, 1, 0};
+
+    if(options.opt & MPG321_ENABLE_BUFFER)
     {
-        ao_close(playdevice);
-        channels = MAD_NCHANNELS(header);
-        rate = header->samplerate;
-        open_ao_playdevice(header);        
-    }        
+	    semop(semarray,&read_sops,1);
+	    ptr = (Output_Queue+mad_decoder_position)->data;
+	    memcpy(&((Output_Queue+mad_decoder_position)->header),header,sizeof(struct mad_header));
+			 
+    }else{
+	    /* We need to know information about the file before we can open the playdevice
+	       in some cases. So, we do it here. */
+	    if (!playdevice)
+	    {
+	    	    channels = MAD_NCHANNELS(header);
+	    	    rate = header->samplerate;
+	    	    open_ao_playdevice(header);        
+	    }
+	    else if ((channels != MAD_NCHANNELS(header) || rate != header->samplerate) && playdevice_is_live())
+	    {
+	    	    ao_close(playdevice);
+	    	    channels = MAD_NCHANNELS(header);
+	    	    rate = header->samplerate;
+	    	    open_ao_playdevice(header);        
+	    }        
+    }
 
     static int peak_rate = 0;
     static unsigned short int peak = 0;
@@ -912,7 +1011,13 @@ enum mad_flow output(void *data,
         }
 	
 	process_fft(stream, pcm->length * 4);
-        ao_play(playdevice, stream, pcm->length * 4);
+	if(options.opt & MPG321_ENABLE_BUFFER)
+	{
+		(Output_Queue+mad_decoder_position)->length = pcm->length * 4;
+	}else
+	{
+		ao_play(playdevice, stream, pcm->length * 4);
+	}
     }
     
     else if (options.opt & MPG321_FORCE_STEREO)
@@ -938,7 +1043,13 @@ enum mad_flow output(void *data,
 #endif
         }
 	process_fft(stream, pcm->length * 4);
-        ao_play(playdevice, stream, pcm->length * 4);
+	if(options.opt & MPG321_ENABLE_BUFFER)
+	{
+		(Output_Queue+mad_decoder_position)->length = pcm->length * 4;
+	}else
+	{
+		ao_play(playdevice, stream, pcm->length * 4);
+	}
     }
         
     else /* Just straight mono output */
@@ -960,7 +1071,13 @@ enum mad_flow output(void *data,
         }
 
 	process_fft(stream, pcm->length * 2);
-	ao_play(playdevice, stream, pcm->length * 2);
+	if(options.opt & MPG321_ENABLE_BUFFER)
+	{
+		(Output_Queue+mad_decoder_position)->length = pcm->length * 2;
+	}else
+	{
+		ao_play(playdevice, stream, pcm->length * 2);
+	}
     }
 
     if(options.opt & MPG321_REMOTE_PLAY && (options.opt & MPG321_PRINT_FFT))
@@ -973,6 +1090,14 @@ enum mad_flow output(void *data,
 		    peak = 0;
 	    }
     }
+    
 
+    if(options.opt & MPG321_ENABLE_BUFFER)
+    {
+	    mad_decoder_position = getnext_place(mad_decoder_position);
+	    semop(semarray,&write_sops,1);
+	    Decoded_Frames->total_decoded_frames+=1;
+	    ///fprintf(stderr,"%d\n",Decoded_Frames->total_decoded_frames);
+    }
     return MAD_FLOW_CONTINUE;        
 }

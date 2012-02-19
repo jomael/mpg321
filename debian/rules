@@ -6,6 +6,8 @@
 
 CFLAGS = $(shell dpkg-buildflags --get CFLAGS) -Wall -Wunused
 
+MPG321_ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
+
 LDFLAGS += -Wl,-z,defs -Wl,--as-needed
 
 INSTALL_PROGRAM = /usr/bin/install 
@@ -14,12 +16,13 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	
-#CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
-	./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
+	#CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
+ifeq ($(MPG321_ARCH),linux)
+	./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink --enable-alsa=yes
+else
+	./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink --enable-alsa=no
+endif
 	touch configure-stamp
-
-
 
 build: configure-stamp build-arch build-indep
 build-arch: build-stamp

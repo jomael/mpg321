@@ -36,6 +36,9 @@
 #include <unistd.h>
 
 char remote_input_buf[PATH_MAX + 5];
+#ifdef HAVE_ALSA
+extern long volume_max;
+#endif
 
 static
 enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
@@ -159,6 +162,11 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
             clear_remote_file(pl);
             current_frame = 0;
             pause_play(NULL, NULL); /* reset pause data */
+	    if(options.opt & MPG321_ENABLE_BUFFER) 
+	    {
+		    Decoded_Frames->total_played_frames = 0;
+		    Decoded_Frames->stop_playing_file = 1;
+	    }
             printf("@P 0\n");
         }
         
@@ -168,6 +176,8 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
     else if (strcasecmp(input, "Q") == 0 || strcasecmp(input, "QUIT") == 0)
     {
         quit_now = 1;
+	if(options.opt & MPG321_ENABLE_BUFFER) 
+		    Decoded_Frames->quit_now = 1;
         goto stop;
     }
     
@@ -185,12 +195,30 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
     {
        if (arg)
        {
-    	   options.volume = mad_f_tofixed(atoi(arg)/100.0);
+#ifdef HAVE_ALSA
+	       if(options.opt & MPG321_ENABLE_BUFFER)
+		       mpg321_alsa_set_volume((long)atol(arg)*volume_max/100);
+	       else{
+#endif
+		       if(!(options.opt & MPG321_ENABLE_BUFFER))
+		    	       options.volume = mad_f_tofixed(atoi(arg)/100.0);
+#ifdef HAVE_ALSA
+	       }
+#endif
            free(arg);
        }
        else
        {
-           fprintf(stderr, "@G %d\n", (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0));
+#ifdef HAVE_ALSA
+	       if(options.opt & MPG321_ENABLE_BUFFER)
+	           fprintf(stderr, "@G %lu\n", (int)(100*mpg321_alsa_get_volume()/volume_max));
+	       else{
+#endif
+		       if(!(options.opt & MPG321_ENABLE_BUFFER))
+		           fprintf(stderr, "@G %d\n", (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0));
+#ifdef HAVE_ALSA
+	       }
+#endif
        }
 
        return MAD_FLOW_CONTINUE;

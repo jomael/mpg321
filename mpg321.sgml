@@ -40,7 +40,7 @@
   <refnamediv>
     <refname>&dhpackage;</refname>
 
-    <refpurpose>Simple and lighweight command line MP3 player</refpurpose>
+    <refpurpose>Simple and lightweight command line MP3 player</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <cmdsynopsis>
@@ -205,6 +205,22 @@
         </listitem>
       </varlistentry> 
       <varlistentry>
+        <term><option>-x</option>
+        </term>
+        <listitem>
+          <para>Set xterm title setting
+          </para>
+        </listitem>
+      </varlistentry> 
+      <varlistentry>
+        <term><option>-b</option>
+        </term>
+        <listitem>
+          <para>Number of decoded frames for the output buffer.
+          </para>
+        </listitem>
+      </varlistentry> 
+      <varlistentry>
         <term><option>-K</option>
         </term>
         <listitem>
@@ -291,6 +307,13 @@
  </term>
  <listitem>
  <para>Skip song.</para>
+ </listitem>
+ </varlistentry>
+ <varlistentry>
+ <term><option> m </option>
+ </term>
+ <listitem>
+ <para>Mute/unmute.</para>
  </listitem>
  </varlistentry>
  </variablelist>

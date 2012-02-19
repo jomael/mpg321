@@ -54,7 +54,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_mpg321_OBJECTS = mpg321.$(OBJEXT) mad.$(OBJEXT) playlist.$(OBJEXT) \
 	network.$(OBJEXT) remote.$(OBJEXT) ao.$(OBJEXT) \
 	options.$(OBJEXT) auth.$(OBJEXT) scrobbler.$(OBJEXT) \
-	fft.$(OBJEXT)
+	fft.$(OBJEXT) fbuffer.$(OBJEXT) volume.$(OBJEXT)
 mpg321_OBJECTS = $(am_mpg321_OBJECTS)
 mpg321_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -242,7 +242,9 @@ mpg321_SOURCES = \
 	options.c \
 	auth.c \
 	scrobbler.c \
-	fft.c
+	fft.c \
+	fbuffer.c \
+	volume.c
 
 SUBDIRS = 
 EXTRA_DIST = README.remote HACKING BUGS mpg321.sgml mpg321.1 $(srcdir)/debian/*
@@ -352,6 +354,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ao.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auth.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fbuffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mad.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpg321.Po@am__quote@
@@ -360,6 +363,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/playlist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/remote.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scrobbler.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/volume.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

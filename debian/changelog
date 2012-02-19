@@ -1,3 +1,29 @@
+mpg321 (0.3.1-1) unstable; urgency=low
+ 
+  * Fixed debian/rules, configure.ac, volume.c, mpg321.c and remote.c
+    so that mpg321 can compile to architectures that do not support 
+    ALSA.
+  * Fixed typo ("lighweight") in the man page.
+    Thanks to A.Costa <agcosta@gis.net> (Closes: Bug#650150)
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 19 Feb 2012 13:00:36 +0300
+
+mpg321 (0.3.0-1) unstable; urgency=low
+
+  * Fixed trailing "/" when printint directory. 
+    Bug reported from Erik (Gentoo).
+  * Fixed mistake for '--cdr' option. It should be 'cdr file'
+    than 'wave file' in output.
+  * mpg321 now supports multiprocessing buffering.Check '-b' option. 
+    (Closes: Bug#113405).
+  * Added '-3' or '--restart' option in man file.
+  * Added ALSA volume control when using output buffer.
+  * Added Mute/unmute into Basic Keys functionality.
+  * Fixed -Werror=format-security issues.
+    Thanks to Micah Gersten <micahg@ubuntu.com>. (Closes: Bug#646317)
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 13 Nov 2011 13:42:36 +0300
+
 mpg321 (0.2.13-4) unstable; urgency=low
 
   * Fixed bug when trying to "load file" from a remote instance and 

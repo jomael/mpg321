@@ -34,8 +34,6 @@ AC_CHECK_LIB(z, compress2,,AC_MSG_ERROR("zlib is required to compile mpg321. Usu
 AC_CHECK_LIB(id3tag,id3_tag_new,,AC_MSG_ERROR("libid3tag is required to compile mpg321. Find it in the MAD distribution at http://www.mars.org/home/rob/proj/mpeg/ - version 0.14.1 or better."), -lz)
 AC_CHECK_LIB(pthread, pthread_create,,AC_MSG_ERROR("POSIX Threads is required to compile mpg321."))
 
-LIBS="$LIBS -lz -lpthread -lm"
-
 XIPH_PATH_AO(,AC_MSG_ERROR(libao needed!))
 
 CFLAGS="$CFLAGS $AO_CFLAGS"
@@ -89,6 +87,32 @@ AC_ARG_ENABLE(debug,
 		debug=$enableval, debug=no)
 
 
+dnl get the flags
+#CFLAGS="${CFLAGS=}"
+dnl this macro is used to get the arguments supplied
+dnl to the configure script (./configure --enable-debug)
+dnl Check if we have enable debug support.
+AC_MSG_CHECKING(whether to enable ALSA)
+alsa_default="yes"
+AC_ARG_ENABLE(alsa, [  --enable-alsa=[no/yes] enable ALSA
+                       [default=yes]],, enable_alsa=$alsa_default)
+dnl Yes, shell scripts can be used
+if test "x$enable_alsa" = "xyes"; then
+        CFLAGS="$CFLAGS -DHAVE_ALSA"
+	check_alsa="yes"
+        AC_MSG_RESULT(yes)
+else
+        CFLAGS="$CFLAGS"
+	LIBS="$LIBS -lz -lpthread -lm"
+	check_alsa="no"
+        AC_MSG_RESULT(no)
+fi
+
+
+if test "x$check_alsa" = "xyes"; then
+	AC_CHECK_LIB(asound, snd_mixer_selem_get_playback_volume,,AC_MSG_ERROR("ALSA lib is required to compile mpg321."))
+	LIBS="$LIBS -lz -lpthread -lm -lasound"
+fi
 
 # borrowed from a mail from Russ Allbery - from INN
 dnl The rat's nest of networking libraries.  The common cases are not to

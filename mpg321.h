@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
-    Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 Nanakos Chrysostomos
+    Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011, 2012 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -38,9 +38,11 @@
 #include <limits.h>
 #include <ao/ao.h>
 #include <mad.h>
+#include <semaphore.h>
 
-#define FAKEVERSION "0.2.13-4"
-#define VERSIONDATE "2011/09/29"
+
+#define FAKEVERSION "0.3.0-1"
+#define VERSIONDATE "2011/10/08"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096
@@ -153,9 +155,10 @@ enum
     MPG321_RECURSIVE_DIR  = 0x00040000,
     MPG321_PRINT_FFT	  = 0x00080000,
     MPG321_ENABLE_BASIC	  = 0x00100000,
+    MPG321_ENABLE_BUFFER  = 0x01000000,
 };
 
-#define DEFAULT_PLAYLIST_SIZE 1024
+#define DEFAULT_PLAYLIST_SIZE 2048
 #define BUF_SIZE 1048576 /* Size for read buffer for audio data */
 
 /* playlist functions */
@@ -248,5 +251,56 @@ fft_state *fft_init(void);
 #define KEY_CTRL_VOLUME_DOWN	'/'
 #define KEY_CTRL_NEXT_SONG	'n'
 #define KEY_CTRL_PAUSE_SONG	'p'
+#define KEY_CTRL_MUTE		'm'
 /* This is it for the moment */
+
+
+/* Output buffer process */
+void frame_buffer_p();
+/* Semaphore array */
+int semarray;
+/* Input/Output buffer position */
+int mad_decoder_position;
+int output_buffer_position;
+/* Output Frame including needed information */
+typedef struct {
+	unsigned char data[4*1152];
+	unsigned short length;
+	signed long seconds;
+	char time[80];
+	unsigned long num_frames;
+	struct mad_header header;
+} output_frame;
+/* Control structure with detailed information about each frame */
+typedef struct {
+	unsigned long total_decoded_frames;
+	unsigned long total_played_frames;
+	int done;
+	int is_http;
+	int is_file;
+	int quit_now;
+	int stop_playing_file;
+	int timer;
+	long bvolume;
+} decoded_frames;
+
+/* Output frame queue pointer */
+output_frame *Output_Queue;
+
+/* Shared total decoded frames */
+decoded_frames *Decoded_Frames;
+
+#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
+/* */
+#else
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+	struct seminfo *__buf;
+};
+#endif
+/* Get the next encoding/decoding place in the frame buffer */
+int getnext_place(int position);
+
 #endif /* _MPG321_H_ */

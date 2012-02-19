@@ -1,7 +1,7 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
-    Copyright (C) 2006-2011 Nanakos Chrysostomos
+    Copyright (C) 2006-2012 Nanakos Chrysostomos
     
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
@@ -30,8 +30,6 @@
 #include <config.h>
 #endif
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,8 +45,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
 
-#include "getopt.h" /* GNU getopt is needed, so I included it */
+#include <getopt.h> /* GNU getopt is needed, so I included it */
 #include "mpg321.h"
 #include <sys/wait.h>
 
@@ -90,13 +91,31 @@ mpg321_options options = { 0, NULL, NULL, 0 , 0, 0};
 int status = MPG321_STOPPED;
 int file_change = 0;
 int remote_restart = 0;
-
+int muted = 0;
 char *id3_get_tag (struct id3_tag const *tag, char const *what, unsigned int maxlen);
+
+/* Buffer Size (if enabled) */
+int buffer_size = 0;
+/* PID of frame buffer process */
+pid_t output_pid;
+/* Not used for the moment. It only works for CBR http/ftp retrieved files */
+extern http_file_length;
+#ifdef HAVE_ALSA
+/* ALSA Volume Range */
+extern long volume_min,volume_max;
+#endif
+/* Get the next frame in the round buffer */
+int getnext_place(int position)
+{
+	(position < buffer_size-1)?(position++):(position=0);
+	return position;
+}
 
 /* Basic control keys thread */
 void *read_keyb(void *ptr)
 {
 	int ch;
+	long bvolume = 0;
 	sem_wait(&main_lock);
 	/* Get the current terminal settings for the first time*/
 	if (tcgetattr(0, &terminal_settings) < 0)
@@ -106,33 +125,147 @@ void *read_keyb(void *ptr)
 	terminal_settings.c_lflag &= ~(ICANON | ECHO);
 	if (tcsetattr(0, TCSANOW, &terminal_settings) < 0)
 		perror("tcsetattr ICANON");
-	
-	volume = (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0);
+	if(options.opt & MPG321_ENABLE_BUFFER)
+	{
+//		init_alsa_volume_control("default");
+#ifdef HAVE_ALSA
+		bvolume = mpg321_alsa_get_volume();
+#endif
+		Decoded_Frames->timer = -1;
+	}
+	else
+		volume = (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0);
 	while(!pflag)
 	{
 		ch = getchar();
 		if(ch == KEY_CTRL_VOLUME_DOWN)
 		{
-			count = 1;
-			volume -= 3;
-			if(volume < 0)
-				volume = 0;
-			options.volume = mad_f_tofixed(volume / 100.0);
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+#ifdef HAVE_ALSA
+				bvolume = mpg321_alsa_get_volume();
+				bvolume = bvolume - round(0.02*volume_max); /* 1dB decrement ? */
+#endif
+				Decoded_Frames->timer = 1;
+			}
+			else
+			{
+				count = 1;
+				volume -= 3;
+			}
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+#ifdef HAVE_ALSA
+				if(bvolume < volume_min)
+					bvolume = volume_min;
+				Decoded_Frames->bvolume = 100*bvolume/volume_max;
+#endif
+			
+			}
+			else
+			{
+				if(volume < 0)
+					volume = 0;
+			}
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{	
+#ifdef HAVE_ALSA
+				mpg321_alsa_set_volume(bvolume);
+#endif
+			}
+			else
+				options.volume = mad_f_tofixed(volume / 100.0);
 			if(!(options.opt & MPG321_VERBOSE_PLAY))
-				fprintf(stdout,"Volume: %d%%      \r",volume);
+			{
+#ifdef HAVE_ALSA
+				if(options.opt & MPG321_ENABLE_BUFFER)
+					fprintf(stdout,"Volume: %lu%%      \r",100*bvolume/volume_max);
+				else{
+#endif					
+					if(!(options.opt & MPG321_ENABLE_BUFFER))
+						fprintf(stdout,"Volume: %ld%%      \r",volume);
+#ifdef HAVE_ALSA
+				}
+#endif
+			}
 		}
 		if(ch == KEY_CTRL_VOLUME_UP)
 		{
-			count = 1;
-			volume += 3;
-			if(volume > 100)
-				volume = 100;
-			options.volume = mad_f_tofixed(volume / 100.0);
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+#ifdef HAVE_ALSA
+				bvolume = mpg321_alsa_get_volume();
+				bvolume = bvolume + round(0.02*volume_max); /* 1dB increment? */
+#endif
+				Decoded_Frames->timer = 1;
+			}
+			else
+			{
+				count = 1;
+				volume += 3;
+			}
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+#ifdef HAVE_ALSA
+				if(bvolume > volume_max)
+					bvolume = volume_max;
+				Decoded_Frames->bvolume = 100*bvolume/volume_max;
+#endif
+			}
+			else
+			{
+				if(volume > 100)
+					volume = 100;
+			}
+			if(options.opt & MPG321_ENABLE_BUFFER)
+			{
+#ifdef HAVE_ALSA
+				mpg321_alsa_set_volume(bvolume);
+#endif
+			}
+			else
+				options.volume = mad_f_tofixed(volume / 100.0);
 			if(!(options.opt & MPG321_VERBOSE_PLAY))
-				fprintf(stdout,"Volume: %d%%      \r",volume);
+			{
+#ifdef HAVE_ALSA
+				if(options.opt & MPG321_ENABLE_BUFFER)
+					fprintf(stdout,"Volume: %lu%%      \r",100*bvolume/volume_max);
+				else{
+#endif
+					if(!(options.opt & MPG321_ENABLE_BUFFER))
+						fprintf(stdout,"Volume: %ld%%      \r",volume);
+#ifdef HAVE_ALSA
+				}
+#endif
+			}
 		}
 		if(ch == KEY_CTRL_NEXT_SONG)
+		{
 			kill(getpid(),SIGINT);
+		}
+		if(ch == KEY_CTRL_MUTE)
+		{
+			if(!muted)
+			{
+				muted = 1;
+#ifdef HAVE_ALSA
+				if(options.opt & MPG321_ENABLE_BUFFER)
+					mpg321_alsa_set_volume((long)0.0);
+				else
+#endif
+					options.volume = mad_f_tofixed(0.0);
+			}
+			else
+			{
+				muted = 0;
+#ifdef HAVE_ALSA
+				if(options.opt & MPG321_ENABLE_BUFFER)
+					mpg321_alsa_set_volume(bvolume);
+				else
+#endif
+					options.volume = mad_f_tofixed(volume / 100.0);
+			}
+		}
 	}
 	if (tcsetattr(0, TCSANOW, &old_terminal_settings) < 0)
 		perror("tcsetattr ICANON");
@@ -181,10 +314,6 @@ static int parse_id3( char *names[], const struct id3_tag *tag)
 	return (found);
 }
 
-
-
-
-
 void mpg123_boilerplate()
 {
     fprintf(stderr,"High Performance MPEG 1.0/2.0/2.5 Audio Player for Layer 1, 2, and 3.\n"
@@ -217,7 +346,7 @@ void usage(char *argv0)
         "   --audiodevice N or -a N  Use N for audio-out\n"
         "   --stdout or -s           Use stdout for audio-out\n"
         "   --au N                   Use au file N for output\n"
-        "   --cdr N                  Use wave file N for output\n"
+        "   --cdr N                  Use cdr file N for output\n"
         "   --wav N or -w N          Use wave file N for output\n"
         "   --test or -t             Test only; do no audio output\n"
         "   --list N or -@ N         Use playlist N as list of MP3 files\n"
@@ -226,11 +355,13 @@ void usage(char *argv0)
         "   --loop N or -l N         Play files N times. 0 means until\n"
         "                            interrupted\n"
         "   -R                       Use remote control interface\n"
+        "   -3                       Restart \"remote shell\". Used only when in \"Remote control\" mode.\n"
         "   -F                       Turn on FFT analysis on PCM data. Remote mode only\n"
         "   -B                       Read recursively the given directories\n"
         "   -S                       Report mp3 file to AudioScrobbler\n"
         "   -K                       Enable Basic Keys\n"
         "   -x                       Set xterm title setting\n"
+        "   -b                       Number of decoded frames for the output buffer\n"
         "   -p hostname:port         Use proxy server\n"
         "   -u username:password     Use proxy server basic authentication\n"
         "   -U username:password     Use proxy server basic authentication by using environment variables\n"
@@ -238,7 +369,10 @@ void usage(char *argv0)
         "   --help or --longhelp     Print this help screen\n"
         "   --version or -V          Print version information\n"
         "Basic keys:                                            \n"
+	#ifdef HAVE_ALSA
 	"* or /   Increase or decrease volume.                  \n"
+	"m        Mute/unmute                                   \n"
+	#endif
 	"n        Skip song.                                    \n"
 	"\n"
         "This version of mpg321 has been configured with " AUDIO_DEFAULT " as its default\n"
@@ -261,18 +395,30 @@ RETSIGTYPE handle_signals(int sig)
                                                                   kill mpg321 */
         {
             quit_now = 1;
+	    if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->quit_now = 1;
         }
             
         last_signal.tv_sec = curr_tv.tv_sec;
         last_signal.tv_usec = curr_tv.tv_usec;
+		
         
         stop_playing_file = 1;
+        if(options.opt & MPG321_ENABLE_BUFFER) Decoded_Frames->stop_playing_file = 1;
    }
    else if (sig == -1) /* initialize */
    {
         last_signal.tv_sec = curr_tv.tv_sec;
         last_signal.tv_usec = curr_tv.tv_usec;
    }
+    else if(sig == SIGUSR1) {
+	    stop_playing_file = 1;
+	    quit_now =1 ;
+	    if(options.opt & MPG321_ENABLE_BUFFER) 
+	    {
+		    Decoded_Frames->quit_now = 1;
+	    	    Decoded_Frames->stop_playing_file = 1;
+	    }
+    }
 }
 
 /*
@@ -366,6 +512,16 @@ int main(int argc, char *argv[])
     
     struct mad_decoder decoder;
     pthread_t keyb_thread;
+
+    key_t sem_key;
+    key_t mem_key;
+    key_t frames_key;
+
+    union semun sem_ops;
+    int shm_id;
+    int frames_id;
+    mad_decoder_position = 0;
+    output_buffer_position = 0;
     
     old_dir[0] = '\0';
 
@@ -413,14 +569,110 @@ int main(int argc, char *argv[])
     if (shuffle_play)
         shuffle_files(pl);
 
-    ao_initialize();
+    if(options.opt & MPG321_ENABLE_BUFFER)
+    {
+	    /* Initialize semaphore and shared memeory */
+	    if(access(argv[0],X_OK) == 0)
+		    sem_key = ftok(argv[0],0);
+	    else
+		    sem_key = ftok(MPG321_PATH,0);
+	    if(sem_key == -1)
+	    {
+		    perror("Cannot obtain resources for semaphores");
+		    exit(EXIT_FAILURE);
+	    }
+	    semarray = semget(sem_key,3,IPC_CREAT | IPC_EXCL | S_IRWXU);
+	    if(semarray == -1)
+	    {
+		    perror("Cannot initialize semaphores");
+		    exit(EXIT_FAILURE);
+	    }
+	    sem_ops.val = buffer_size-1;
+	    if(semctl(semarray,0,SETVAL,sem_ops) == -1)
+	    {
+		    perror("Error while initializing mad_decoder semaphore");
+		    if(semctl(semarray,0,IPC_RMID) == -1)
+			    perror("Error while destroying semaphores");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    sem_ops.val = 0;
+	    if(semctl(semarray,1,SETVAL,sem_ops) == -1)
+	    {
+		    perror("Error while initializing mad_decoder semaphore");
+		    if(semctl(semarray,0,IPC_RMID) == -1)
+			    perror("Error while destroying semaphores");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    sem_ops.val = 0;
+	    if(semctl(semarray,2,SETVAL,sem_ops) == -1)
+	    {
+		    perror("Error while initializing mad_decoder semaphore");
+		    if(semctl(semarray,0,IPC_RMID) == -1)
+			    perror("Error while destroying semaphores");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
 
-    check_default_play_device();
+	    /* Shared Memory */
+	    mem_key = ftok(argv[0],1);
+	    shm_id = shmget(mem_key,buffer_size * sizeof(output_frame), IPC_CREAT | S_IREAD | S_IWRITE);
+	    if(shm_id == -1)
+	    {
+		    perror("Cannot initialize shared buffer");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    Output_Queue = shmat(shm_id,NULL,0);
+	    if(*(int *)Output_Queue == -1)
+	    {
+		    perror("Error while attaching shared buffer to mad_decoder");
+		    if(shmctl(shm_id,IPC_RMID,NULL))
+			    perror("Cannot destroy shared buffer");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    static int n;
+	    for(n=0;n<buffer_size;n++)
+	    {
+		    memset((Output_Queue+n)->data,'\0',4608);
+		    memset((Output_Queue+n)->time,'\0',80);
+		    (Output_Queue+n)->length = 0;
+		    (Output_Queue+n)->seconds = 0;
+		    (Output_Queue+n)->num_frames = 0;
+	    }
+	    
+	    frames_key = ftok(argv[0],2);
+	    frames_id = shmget(frames_key,buffer_size * sizeof(decoded_frames), IPC_CREAT | S_IREAD | S_IWRITE);
+	    if(frames_id == -1)
+	    {
+		    perror("Cannot initialize shared frames counter");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    Decoded_Frames = shmat(frames_id,NULL,0);
+	    if(*(int *)Decoded_Frames == -1)
+	    {
+		    perror("Error while attaching shared frames counter to mad_decoder");
+		    if(shmctl(frames_id,IPC_RMID,NULL))
+			    perror("Cannot destroy shared frames counter");
+		    goto out;
+		    //exit(EXIT_FAILURE);
+	    }
+	    	
+	    Decoded_Frames->is_http = 0;
+	    Decoded_Frames->is_file = 0;
+
+    }
+    else {
+	    ao_initialize();
+	    check_default_play_device();
+    }
     
     if (!(options.opt & MPG321_REMOTE_PLAY))
     {
         handle_signals(-1); /* initialize signal handler */
-     
         remote_input_buf[0] = '\0';
     }
     
@@ -430,10 +682,54 @@ int main(int argc, char *argv[])
     if (options.opt & MPG321_REMOTE_PLAY)
     {
         printf ("@R MPG123\n");
+	if(options.opt & MPG321_ENABLE_BUFFER)
+	{
+#ifdef HAVE_ALSA
+		init_alsa_volume_control("default"); /* For the moment use "default", it works on most of the systems. Tested in Debian,Fedora,Ubuntu,RedHat,CentOS,Gentoo */
+		if(options.volume != MAD_F_ONE)
+			mpg321_alsa_set_volume((long)options.volume*volume_max/100);
+#endif
+	}
     }
 
-     if (!(options.opt & MPG321_REMOTE_PLAY))
-     {
+    /* Fork here. */
+    if(options.opt & MPG321_ENABLE_BUFFER)
+    {
+	    output_pid = fork();
+	    if(output_pid == -1)
+	    {
+		    perror("Error while forking output process");
+		    goto out; /* Release shared memeory and semaphores */
+		//    exit(EXIT_FAILURE);
+	    }
+
+	    if(output_pid == 0)
+	    {
+		    frame_buffer_p();
+		    exit(EXIT_SUCCESS);
+	    }
+	    signal(SIGUSR1,handle_signals);
+	    if(!(options.opt & MPG321_REMOTE_PLAY))
+	    {
+#ifdef HAVE_ALSA
+		    init_alsa_volume_control("default");
+		    if(options.volume != MAD_F_ONE)
+			    mpg321_alsa_set_volume((long)options.volume*volume_max/100);
+#endif
+	    }
+    }
+
+    if( (options.volume != MAD_F_ONE) && !(options.opt & MPG321_ENABLE_BUFFER))
+    {
+	    options.volume = mad_f_tofixed((long)options.volume/100.0);
+    }
+    else{
+	    options.volume = MAD_F_ONE; /* When using the buffer options.volume when decoding each frame should be equal to MAD_F_ONE */
+//	    options.volume = mad_f_tofixed((long)100.0/100.0);
+    }
+
+    if (!(options.opt & MPG321_REMOTE_PLAY))
+    {
 	     if(options.opt & MPG321_ENABLE_BASIC)
 	     {
 	 	     /* Now create and detach the basic controls thread */
@@ -551,8 +847,6 @@ int main(int argc, char *argv[])
                         free(basec);
                     }
                 }
-                
-            
             else
             {
                 char * basec = strdup(currentfile);
@@ -580,7 +874,13 @@ int main(int argc, char *argv[])
             playbuf.fd = fd;
             playbuf.buf = malloc(BUF_SIZE);
             playbuf.length = BUF_SIZE;
-            
+	    if(options.opt & MPG321_ENABLE_BUFFER)
+	    {
+		    Decoded_Frames->is_http = 1;
+		    Decoded_Frames->is_file = 0;
+	    }
+	    calc_http_length(&playbuf);
+
             mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
                             output, handle_error, /* message */ 0);
         }
@@ -603,6 +903,7 @@ int main(int argc, char *argv[])
             
             if((fd = open(currentfile, O_RDONLY)) == -1)
             {
+	    
                 mpg321_error(currentfile);
 		/* Restore TTY from keyboard reader thread */
 	        if(options.opt & MPG321_ENABLE_BASIC)
@@ -621,11 +922,20 @@ int main(int argc, char *argv[])
 				clear_remote_file(pl); /* If restart is enabled, restart remote shell when file doesn't exist*/
 				continue;
 			}
-		exit(1);
+		if(options.opt & MPG321_ENABLE_BUFFER)
+			goto out;
+		else
+			exit(1);
                 /* mpg123 stops immediately if it can't open a file */
 		/* If sth goes wrong break!!!*/
                 break;
             }
+
+	    if(options.opt & MPG321_ENABLE_BUFFER)
+	    {
+		    Decoded_Frames->is_http = 0;
+		    Decoded_Frames->is_file = 1;
+	    }
             
             if(fstat(fd, &stat) == -1)
             {
@@ -643,7 +953,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             
-            retval = calc_length(currentfile, &playbuf);
+            retval = calc_length(currentfile, &playbuf); //FIXME Check also if it is an mp3 file. If not break and go to the next file possible
 	    if(retval < 0)
 	    {
 		    if(options.opt & MPG321_REMOTE_PLAY)
@@ -659,7 +969,8 @@ int main(int argc, char *argv[])
 		    }
 		    mpg321_error(currentfile);
 		    close(fd);
-		    break;
+//		    break; //FIXME Break and stop OR continue the playlist ????
+		    continue;
 	    }
 
 	    if((options.opt & MPG321_VERBOSE_PLAY) && (options.opt & MPG321_USE_SCROBBLER))
@@ -690,7 +1001,7 @@ int main(int argc, char *argv[])
 	    mad_decoder_init(&decoder, &playbuf, read_from_mmap, read_header, /*filter*/0,
             
 	    		    output, handle_error, /* message */ 0);
-fall_back_to_read_from_fd:	
+fall_back_to_read_from_fd:	//FIXME. Reported that on some embedded systems with low memory, less than 16MB doesn't work properly.
 	    playbuf.fd = fd;
 	    playbuf.buf = malloc(BUF_SIZE);
 	    playbuf.length = BUF_SIZE;
@@ -713,7 +1024,7 @@ fall_back_to_read_from_fd:
             {
                 /* Print information about the file */
                 fprintf(stderr, "\n");
-                fprintf(stderr,"Directory: %s/\n", dirn);
+                fprintf(stderr,"Directory: %s\n", dirn);
                 
                 strncpy(old_dir, dirn, PATH_MAX);
                 old_dir[PATH_MAX-1] = '\0';
@@ -728,7 +1039,7 @@ fall_back_to_read_from_fd:
 
             fprintf(stderr,"Playing MPEG stream from %s ...\n", basen);
             
-			/*Printing xterm title*/
+	    /* Printing xterm title */
 	    if(set_xterm)
 	    {
 		    osc_print(0,0,basen);
@@ -760,12 +1071,31 @@ fall_back_to_read_from_fd:
 	}
         /* Every time the user gets us to rewind, we exit decoding,
            reinitialize it, and re-start it */
+	    
+	if(options.opt & MPG321_ENABLE_BUFFER)
+    	{
+		Decoded_Frames->total_decoded_frames = 0;
+		Decoded_Frames->done = 0;
+	}
       
         while (1)
         {
             decoder.options |= MAD_OPTION_IGNORECRC;
             mad_decoder_run(&decoder, MAD_DECODER_MODE_SYNC);
-            
+	    if(options.opt & MPG321_ENABLE_BUFFER)
+	    {
+		    static struct sembuf start_sops = {2,-1,0};
+		    semop(semarray,&start_sops,1);
+		    mad_decoder_position = 0;
+		    output_buffer_position = 0;
+		    union semun sem_ops;
+		    sem_ops.val = 0;
+		    semctl(semarray,2,SETVAL,sem_ops);
+		    Decoded_Frames->total_decoded_frames = 0;
+		    Decoded_Frames->done = 0;
+		    Decoded_Frames->is_http = 0;
+		    Decoded_Frames->is_file = 0;
+	    }
             /* if we're rewinding on an mmap()ed stream */
             if(status == MPG321_REWINDING && playbuf.fd == -1) 
             {
@@ -782,7 +1112,7 @@ fall_back_to_read_from_fd:
             mad_timer_string(current_time, time_formatted, "%.1u:%.2u", MAD_UNITS_MINUTES,
                        MAD_UNITS_SECONDS, 0);
 	    fprintf(stdout,"                                                                            \r");
-	    fprintf(stderr, "\n[%s] Decoding of %s finished.\n",time_formatted, basename(currentfile));
+	    fprintf(stderr, "\n[%s] Decoding of %s finished.\n",time_formatted, basename(currentfile)); /* Report total decoded seconds. Maybe for the frame buffer report only total played time?? */
         }
         
         if (options.opt & MPG321_REMOTE_PLAY && status == MPG321_STOPPED)
@@ -812,10 +1142,6 @@ fall_back_to_read_from_fd:
         }
     }
 
-    if(playdevice)
-        ao_close(playdevice);
-
-    ao_shutdown();
      if (!(options.opt & MPG321_REMOTE_PLAY))
      {
 	     if(options.opt & MPG321_ENABLE_BASIC)
@@ -834,9 +1160,27 @@ fall_back_to_read_from_fd:
 	    if (ctty)
 		    fclose(ctty);
     }
+
+out:
+    if(options.opt & MPG321_ENABLE_BUFFER)
+    {
+	    if(kill(output_pid,SIGUSR1) == -1)
+		    perror("Error while stopping output process");
+	    static int wstatus;
+	    wait(&wstatus);
+	    if(wstatus == -1)
+		    perror("Error while waiting for output process to exit");
+	    if(semctl(semarray,0,IPC_RMID) == -1)
+		    perror("Error while destroying semaphores");
+	    if(shmdt(Output_Queue) == -1)
+		    perror("Error while detaching shared buffer");
+	    if(shmctl(shm_id,IPC_RMID,NULL))
+		    perror("Cannot destroy shared buffer");
+	    if(shmctl(frames_id,IPC_RMID,NULL))
+		    perror("Cannot destroy shared buffer");
+    }
     return(0);
 }
-
 
 /* Convenience for retrieving already formatted id3 data
  * what parameter is one of

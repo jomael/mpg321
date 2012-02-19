@@ -11,7 +11,9 @@ mpg321_SOURCES = \
 	options.c \
 	auth.c \
 	scrobbler.c \
-	fft.c
+	fft.c \
+	fbuffer.c \
+	volume.c
 
 SUBDIRS = 
 EXTRA_DIST = README.remote HACKING BUGS mpg321.sgml mpg321.1 $(srcdir)/debian/*
