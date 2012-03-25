@@ -341,9 +341,9 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 		    if(count > 40)
 		    {
 			    if(!(options.opt & MPG321_VERBOSE_PLAY))
-				    fprintf(stdout,"                \r");
+				    fprintf(stderr,"                \r");
 			    count = -1;
-			    fflush(stdout);
+			    fflush(stderr);
 		    }
 	    }
     }
@@ -372,7 +372,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 				//	playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
 			}else*/
 			{
-				fprintf(stdout, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
+				fprintf(stderr, "Volume: %d%%  Frame# %5lu [%5lu], Time: %s [%s], \r",volume, current_frame,
 					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
 			}
 		}
@@ -387,7 +387,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 			else
 			{
 				
-				fprintf(stdout, "Frame# %5lu [%5lu], Time: %s [%s],                      \r", current_frame,
+				fprintf(stderr, "Frame# %5lu [%5lu], Time: %s [%s],                      \r", current_frame,
 					playbuf->num_frames > 0 ? playbuf->num_frames - current_frame : 0, long_currenttime_str, long_remaintime_str);
 			}
 		}
@@ -407,7 +407,7 @@ enum mad_flow read_header(void *data, struct mad_header const * header)
 		    else
 		    {
 
-			    fprintf(stdout,"@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
+			    fprintf(stderr,"@F %ld %ld %.2f %.2f\n", current_frame, playbuf->num_frames - current_frame,
 				    	    ((double)mad_timer_count(current_time, MAD_UNITS_CENTISECONDS)/100.0),
 			    		    ((double)mad_timer_count(time_remaining, MAD_UNITS_CENTISECONDS)/100.0));
 		    }

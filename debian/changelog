@@ -1,3 +1,13 @@
+mpg321 (0.3.2-1) unstable; urgency=low
+
+  * Fixed bugs to stdout-output (remove garbage in buffer from wrong 
+    stdout fprintf's, it should have been stderr instead)
+  * Fixed bug when closing the stream of AO device that caused wrong
+    header to the output buffer for the normal operation. Buffered output
+    has no problem with that.
+
+ -- Nanakos Chrysostomos <nanakos@wired-net.gr>  Sun, 25 Mar 2012 14:27:09 +0300
+
 mpg321 (0.3.1-1) unstable; urgency=low
  
   * Fixed debian/rules, configure.ac, volume.c, mpg321.c and remote.c

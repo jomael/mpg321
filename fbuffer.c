@@ -87,13 +87,13 @@ void frame_buffer_p(){
 			}
 		}
 		if ((options.opt & MPG321_REMOTE_PLAY))
-			fprintf(stdout,"%s",oframe->time);
+			fprintf(stderr,"%s",oframe->time);
 		else if( options.opt & MPG321_VERBOSE_PLAY )
 		{
 			if(dframes->timer > 0)
-				fprintf(stdout,"Volume: %lu%%  %s\r",dframes->bvolume,oframe->time);
+				fprintf(stderr,"Volume: %lu%%  %s\r",dframes->bvolume,oframe->time);
 			else
-				fprintf(stdout,"%s",oframe->time);
+				fprintf(stderr,"%s",oframe->time);
 		}
 
 		if(oframe->num_frames <= 0 || dframes->quit_now || dframes->stop_playing_file || (dframes->is_http && dframes->done && (dframes->total_decoded_frames-total_played_frames)<=1) 
@@ -130,9 +130,9 @@ void frame_buffer_p(){
 			{
 				
 				if(!(options.opt & MPG321_VERBOSE_PLAY))
-					fprintf(stdout,"                \r");
+					fprintf(stderr,"                \r");
 				dframes->timer = -1;
-				fflush(stdout);
+				fflush(stderr);
 			}
 		}
 

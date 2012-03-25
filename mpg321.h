@@ -41,8 +41,8 @@
 #include <semaphore.h>
 
 
-#define FAKEVERSION "0.3.0-1"
-#define VERSIONDATE "2011/10/08"
+#define FAKEVERSION "0.3.2-1"
+#define VERSIONDATE "2012/03/25"
 
 #ifndef PATH_MAX
 #define PATH_MAX	4096

@@ -69,7 +69,7 @@ int volume = 0;
 int count = -1;
 struct termios old_terminal_settings,terminal_settings;
 sem_t main_lock;
-
+int fallback = 0;
 
 FILE *ctty, *tty_in, *tty_out;
 int TTY_FILENO;
@@ -179,11 +179,11 @@ void *read_keyb(void *ptr)
 			{
 #ifdef HAVE_ALSA
 				if(options.opt & MPG321_ENABLE_BUFFER)
-					fprintf(stdout,"Volume: %lu%%      \r",100*bvolume/volume_max);
+					fprintf(stderr,"Volume: %lu%%      \r",100*bvolume/volume_max);
 				else{
 #endif					
 					if(!(options.opt & MPG321_ENABLE_BUFFER))
-						fprintf(stdout,"Volume: %ld%%      \r",volume);
+						fprintf(stderr,"Volume: %ld%%      \r",volume);
 #ifdef HAVE_ALSA
 				}
 #endif
@@ -229,11 +229,11 @@ void *read_keyb(void *ptr)
 			{
 #ifdef HAVE_ALSA
 				if(options.opt & MPG321_ENABLE_BUFFER)
-					fprintf(stdout,"Volume: %lu%%      \r",100*bvolume/volume_max);
+					fprintf(stderr,"Volume: %lu%%      \r",100*bvolume/volume_max);
 				else{
 #endif
 					if(!(options.opt & MPG321_ENABLE_BUFFER))
-						fprintf(stdout,"Volume: %ld%%      \r",volume);
+						fprintf(stderr,"Volume: %ld%%      \r",volume);
 #ifdef HAVE_ALSA
 				}
 #endif
@@ -947,7 +947,10 @@ int main(int argc, char *argv[])
             if (!S_ISREG(stat.st_mode))
             {
 		    if(S_ISFIFO(stat.st_mode))
+		    {
+			    fallback = 1;
 			    goto fall_back_to_read_from_fd;
+		    }
 
 		close(fd);    
                 continue;
@@ -1002,11 +1005,16 @@ int main(int argc, char *argv[])
             
 	    		    output, handle_error, /* message */ 0);
 fall_back_to_read_from_fd:	//FIXME. Reported that on some embedded systems with low memory, less than 16MB doesn't work properly.
-	    playbuf.fd = fd;
-	    playbuf.buf = malloc(BUF_SIZE);
-	    playbuf.length = BUF_SIZE;
-	    mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
-			    output, handle_error, /* message */ 0);
+	    if(fallback)
+	    {
+	    
+		    playbuf.fd = fd;
+		    playbuf.buf = malloc(BUF_SIZE);
+		    playbuf.length = BUF_SIZE;
+		    mad_decoder_init(&decoder, &playbuf, read_from_fd, read_header, /*filter*/0,
+				    output, handle_error, /* message */ 0);
+		    fallback = 1;
+	    }
         }
 
         if(!(options.opt & MPG321_QUIET_PLAY))/*zip it!!!*/
@@ -1111,7 +1119,7 @@ fall_back_to_read_from_fd:	//FIXME. Reported that on some embedded systems with 
             char time_formatted[11];
             mad_timer_string(current_time, time_formatted, "%.1u:%.2u", MAD_UNITS_MINUTES,
                        MAD_UNITS_SECONDS, 0);
-	    fprintf(stdout,"                                                                            \r");
+	    fprintf(stderr,"                                                                            \r");
 	    fprintf(stderr, "\n[%s] Decoding of %s finished.\n",time_formatted, basename(currentfile)); /* Report total decoded seconds. Maybe for the frame buffer report only total played time?? */
         }
         
@@ -1141,6 +1149,13 @@ fall_back_to_read_from_fd:	//FIXME. Reported that on some embedded systems with 
                 close(playbuf.fd);
         }
     }
+
+    if(!(options.opt & MPG321_ENABLE_BUFFER))
+    {
+  	     if(playdevice)
+		     ao_close(playdevice);
+	     ao_shutdown();
+     }
 
      if (!(options.opt & MPG321_REMOTE_PLAY))
      {

@@ -20,7 +20,7 @@ AC_PREREQ(2.59)
 AC_INIT
 AC_CONFIG_SRCDIR([mad.c])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(mpg321, 0.2.13)
+AM_INIT_AUTOMAKE(mpg321, 0.3.2)
 
 # Checks for programs.
 AC_PROG_AWK
